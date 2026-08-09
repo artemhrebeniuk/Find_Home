@@ -9,6 +9,9 @@ import 'leaflet.markercluster';
 import type { HouseWithCRM, CRMStatus } from '@/lib/types';
 import { formatPriceBubble } from '@/lib/geo';
 
+/**
+ * Props for the MapView component.
+ */
 interface MapViewProps {
   houses: HouseWithCRM[];
   selectedHouseId: number | null;
@@ -36,6 +39,11 @@ const STATUS_LABELS: Record<string, string> = {
   archived: 'Архів',
 };
 
+/**
+ * Renders the Leaflet map with custom marker clusters and popups.
+ * It uses raw DOM manipulation for markers inside Leaflet (which is standard practice)
+ * to avoid massive React re-render overhead with thousands of markers.
+ */
 export default function MapView({
   houses,
   selectedHouseId,

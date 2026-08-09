@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 
+/**
+ * PATCH /api/houses/[id]/status
+ * 
+ * Updates the CRM status of a specific house.
+ * Performs an upsert (INSERT ON CONFLICT DO UPDATE) in the house_crm table.
+ * 
+ * Request Body:
+ * - status: 'new' | 'favorite' | 'call' | 'viewing' | 'archived'
+ */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

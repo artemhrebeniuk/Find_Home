@@ -1,19 +1,33 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 
+/**
+ * Database path resolution.
+ * The database is stored in the root of the project.
+ */
 const DB_PATH = path.resolve(process.cwd(), 'findhome.db');
 
-// Singleton for dev hot-reload
+// Singleton for dev hot-reload to prevent multiple connections in Next.js dev server
 const globalForDb = globalThis as unknown as { __db?: Database.Database };
 
+/**
+ * Initializes and returns a singleton instance of the better-sqlite3 database.
+ * Also automatically creates the required tables (houses, house_crm) and indexes
+ * if they do not exist.
+ * 
+ * @returns {Database.Database} The SQLite database connection
+ */
 function getDb(): Database.Database {
   if (globalForDb.__db) return globalForDb.__db;
 
   const db = new Database(DB_PATH);
+  
+  // Enable Write-Ahead Logging for better concurrent performance
   db.pragma('journal_mode = WAL');
+  // Enable Foreign Keys for relational integrity between houses and CRM
   db.pragma('foreign_keys = ON');
 
-  // Initialize schema
+  // Initialize unified database schema
   db.exec(`
     CREATE TABLE IF NOT EXISTS houses (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -11,6 +11,13 @@ export function isDomRiaConfigured(): boolean {
   return !!DOMRIA_API_KEY;
 }
 
+/**
+ * Synchronizes real estate listings from DOM.RIA via their official REST API.
+ * 
+ * @param {('sale'|'rent')} dealType - Type of real estate operation to fetch.
+ * @param {number} page - Pagination index.
+ * @returns {Promise<{success: boolean, count: number, message?: string, totalAdsFound?: number}>}
+ */
 export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
   if (!DOMRIA_API_KEY) {
     return {

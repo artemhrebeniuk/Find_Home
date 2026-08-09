@@ -2,7 +2,10 @@
 
 import type { UkraineRegion, UkraineCity } from './types';
 
-// All 24 oblasts + Kyiv city (excluding occupied territories for safety)
+/**
+ * List of all 24 oblasts + Kyiv city (excluding occupied territories for safety).
+ * Used for dropdown filtering and geocoding bounds logic.
+ */
 export const REGIONS: UkraineRegion[] = [
   { id: 1, name: 'Вінницька', name_en: 'Vinnytsia', center: 'Вінниця', lat: 49.2331, lng: 28.4682, domria_id: 1, bounds: { sw: [48.2, 27.6], ne: [50.2, 30.0] } },
   { id: 2, name: 'Волинська', name_en: 'Volyn', center: 'Луцьк', lat: 50.7472, lng: 25.3254, domria_id: 2, bounds: { sw: [50.2, 23.5], ne: [51.8, 26.2] } },
@@ -29,7 +32,10 @@ export const REGIONS: UkraineRegion[] = [
   { id: 23, name: 'м. Київ', name_en: 'Kyiv City', center: 'Київ', lat: 50.4501, lng: 30.5234, domria_id: 23, bounds: { sw: [50.2, 30.2], ne: [50.6, 30.9] } },
 ];
 
-// Major cities for distance calculation
+/**
+ * Major cities in Ukraine used as anchor points.
+ * Used to calculate the nearest city and distance for rural properties.
+ */
 export const MAJOR_CITIES: UkraineCity[] = [
   { name: 'Київ', lat: 50.4501, lng: 30.5234, region_id: 8 },
   { name: 'Харків', lat: 49.9935, lng: 36.2304, region_id: 17 },
@@ -62,8 +68,13 @@ export const MAJOR_CITIES: UkraineCity[] = [
 ];
 
 /**
- * Haversine formula — calculate distance between two points on Earth
- * Returns distance in kilometers
+ * Haversine formula to calculate the great-circle distance between two points on a sphere.
+ * 
+ * @param {number} lat1 - Latitude of the first point
+ * @param {number} lng1 - Longitude of the first point
+ * @param {number} lat2 - Latitude of the second point
+ * @param {number} lng2 - Longitude of the second point
+ * @returns {number} Distance in kilometers, rounded to 1 decimal place
  */
 export function haversineDistance(
   lat1: number,
@@ -87,7 +98,12 @@ function toRad(deg: number): number {
 }
 
 /**
- * Find nearest major city to given coordinates
+ * Finds the nearest major city to the given coordinates.
+ * Iterates through MAJOR_CITIES using the Haversine formula.
+ * 
+ * @param {number} lat - Target latitude
+ * @param {number} lng - Target longitude
+ * @returns {{ city: string, distance: number }} Name of the nearest city and distance in km
  */
 export function findNearestCity(lat: number, lng: number): { city: string; distance: number } {
   let minDist = Infinity;
@@ -105,7 +121,11 @@ export function findNearestCity(lat: number, lng: number): { city: string; dista
 }
 
 /**
- * Format distance for display
+ * Formats a distance in kilometers for UI display.
+ * E.g., distances < 1km are shown as "< 1 км".
+ * 
+ * @param {number} km - Distance in kilometers
+ * @returns {string} Formatted distance string
  */
 export function formatDistance(km: number): string {
   if (km < 1) return '< 1 км';
@@ -114,7 +134,11 @@ export function formatDistance(km: number): string {
 }
 
 /**
- * Format price for display
+ * Formats a monetary value for UI display (e.g., "$15K", "₴1.5M").
+ * 
+ * @param {number} price - The raw price number
+ * @param {string} currency - 'USD' or 'UAH' (default: 'USD')
+ * @returns {string} Formatted price string with currency symbol
  */
 export function formatPrice(price: number, currency: string = 'USD'): string {
   if (currency === 'UAH') {
@@ -128,7 +152,11 @@ export function formatPrice(price: number, currency: string = 'USD'): string {
 }
 
 /**
- * Format price for map bubble (short version)
+ * Minimal price formatter designed specifically for small map marker bubbles.
+ * 
+ * @param {number} price - The raw price number
+ * @param {string} currency - 'USD' or 'UAH' (default: 'USD')
+ * @returns {string} Compact formatted price string
  */
 export function formatPriceBubble(price: number, currency: string = 'USD'): string {
   const sym = currency === 'UAH' ? '₴' : '$';
@@ -138,7 +166,8 @@ export function formatPriceBubble(price: number, currency: string = 'USD'): stri
 }
 
 /**
- * Ukraine bounds for initial map view
+ * Default geographic bounds and center for rendering the map of Ukraine.
+ * Used for initializing the Leaflet map view.
  */
 export const UKRAINE_BOUNDS = {
   center: [48.9, 31.2] as [number, number],

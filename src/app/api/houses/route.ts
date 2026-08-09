@@ -2,8 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 import type { HouseWithCRM } from '@/lib/types';
 
+/**
+ * GET /api/houses
+ * 
+ * Fetches houses from the local SQLite database based on various filters.
+ * Returns joined data including CRM status and notes.
+ * 
+ * Query Parameters:
+ * - deal_type: 'sale' or 'rent' (default: 'sale')
+ * - region: Filter by specific region (default: all)
+ * - price_min, price_max: Filter by USD price
+ * - status: Comma-separated list of CRM statuses to include
+ * - bounds: Geographical map boundaries (swLat,swLng,neLat,neLng)
+ * - sort: 'price_asc', 'price_desc', 'distance', 'date'
+ */
 export async function GET(request: NextRequest) {
-
   const { searchParams } = request.nextUrl;
 
   const dealType = searchParams.get('deal_type') || 'sale';
@@ -82,6 +95,12 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/**
+ * DELETE /api/houses
+ * 
+ * Wipes the entire local real estate database (houses and their CRM records).
+ * This is used for completely resetting the app data.
+ */
 export async function DELETE() {
   try {
     // This wipes the houses table. Due to ON DELETE CASCADE or by clearing both, it will clear everything.

@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { syncOLX, syncOLXAllPages } from '@/lib/olx';
 import { syncDomRia, isDomRiaConfigured } from '@/lib/domria';
 
+/**
+ * POST /api/sync
+ * 
+ * Triggers the synchronization of real estate data from external portals.
+ * 
+ * Request Body:
+ * - source: 'olx' | 'domria' (The portal to scrape)
+ * - deal_type: 'sale' | 'rent' (The type of operation)
+ * - page: number (Optional, specific page to scrape for pagination)
+ * - mode: 'full' (Optional, if 'full' it scrapes all available pages up to MAX_PAGES)
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

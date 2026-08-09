@@ -5,6 +5,9 @@ import type { CRMStatus } from '@/lib/types';
 import { CRM_STATUSES } from '@/lib/types';
 import { DownloadCloud, RefreshCw, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 
+/**
+ * Props for the FilterPanel component.
+ */
 interface FilterPanelProps {
   dealType: 'sale' | 'rent';
   region: string;
@@ -20,6 +23,12 @@ interface FilterPanelProps {
   onSync: (source: 'olx' | 'domria') => void;
   onClear: () => void;
 }
+
+/**
+ * Top navigation and filter bar.
+ * Contains global filters (deal type, region, price), CRM status toggles,
+ * and global action buttons (sync OLX, sync DOM.RIA, wipe database).
+ */
 
 export default function FilterPanel({
   dealType,

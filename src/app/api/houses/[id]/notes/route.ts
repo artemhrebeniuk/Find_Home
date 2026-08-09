@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 
+/**
+ * PUT /api/houses/[id]/notes
+ * 
+ * Updates the custom text notes of a specific house.
+ * Performs an upsert (INSERT ON CONFLICT DO UPDATE) in the house_crm table.
+ * 
+ * Request Body:
+ * - notes: string (The text notes to save)
+ */
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

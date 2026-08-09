@@ -5,6 +5,9 @@ import type { HouseWithCRM, CRMStatus } from '@/lib/types';
 import { CRM_STATUSES } from '@/lib/types';
 import { MapPin, StickyNote, ExternalLink } from 'lucide-react';
 
+/**
+ * Props for the HouseCard component.
+ */
 interface HouseCardProps {
   house: HouseWithCRM;
   isActive: boolean;
@@ -13,6 +16,11 @@ interface HouseCardProps {
   onNotesChange: (id: number, notes: string) => void;
 }
 
+/**
+ * Renders a single property card for the sidebar.
+ * Displays property details (price, specs, photo), distance to city,
+ * and interactive CRM controls (status dropdown, notes editor).
+ */
 export default function HouseCard({
   house,
   isActive,
@@ -41,11 +49,14 @@ export default function HouseCard({
     return () => document.removeEventListener('mousedown', handler);
   }, [showStatusMenu]);
 
-  // Sync notes from props
+  // Sync local state when notes change from parent or API
   useEffect(() => {
     setNotes(house.crm_notes || '');
   }, [house.crm_notes]);
 
+  /**
+   * Debounces the notes change event to avoid saving on every keystroke.
+   */
   const handleNotesChange = (value: string) => {
     setNotes(value);
     clearTimeout(timerRef.current);

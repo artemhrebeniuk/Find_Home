@@ -3,6 +3,9 @@
 import type { HouseWithCRM, CRMStatus } from '@/lib/types';
 import HouseCard from './HouseCard';
 
+/**
+ * Props for the Sidebar component.
+ */
 interface SidebarProps {
   houses: HouseWithCRM[];
   selectedHouseId: number | null;
@@ -14,6 +17,10 @@ interface SidebarProps {
   onNotesChange: (id: number, notes: string) => void;
 }
 
+/**
+ * Sidebar layout containing the scrollable list of HouseCards,
+ * total results count, and sorting controls.
+ */
 export default function Sidebar({
   houses,
   selectedHouseId,

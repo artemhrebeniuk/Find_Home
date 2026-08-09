@@ -14,8 +14,11 @@ const MAX_PAGES = 50; // Up to ~2000 listings
 const DELAY_BETWEEN_PAGES_MS = 2000; // 2 seconds between pages to avoid bans
 
 /**
- * Optimize OLX photo URL — replace small thumbnails with larger images
- * OLX CDN supports size parameter: ;s=WIDTHxHEIGHT
+ * Optimizes an OLX photo URL by replacing small thumbnails with higher resolution images.
+ * The OLX CDN supports dynamic resizing via the `;s=WIDTHxHEIGHT` parameter.
+ * 
+ * @param {string | undefined | null} url - The raw URL from the OLX scraping payload
+ * @returns {string | null} The optimized URL for 800x600 resolution
  */
 function optimizePhotoUrl(url: string | undefined | null): string | null {
   if (!url) return null;
@@ -25,7 +28,13 @@ function optimizePhotoUrl(url: string | undefined | null): string | null {
 }
 
 /**
- * Parse a single OLX page and return parsed ads
+ * Scrapes and parses a single page of OLX listings.
+ * It bypasses standard HTML scraping by directly parsing the injected `__PRERENDERED_STATE__`
+ * JSON payload, which contains the complete React state of the page.
+ * 
+ * @param {('sale'|'rent')} dealType - Type of real estate operation.
+ * @param {number} page - Pagination index.
+ * @returns {Promise<{ ads: any[], hasMore: boolean, error?: string }>} Parsed ads array and pagination state
  */
 async function parseOLXPage(dealType: 'sale' | 'rent', page: number): Promise<{
   ads: any[];
@@ -166,7 +175,11 @@ async function parseOLXPage(dealType: 'sale' | 'rent', page: number): Promise<{
 }
 
 /**
- * Insert parsed ads into the database
+ * Inserts or updates a batch of parsed ads into the local SQLite database.
+ * Uses `ON CONFLICT(external_id) DO UPDATE` to prevent duplicates and keep existing data fresh.
+ * 
+ * @param {any[]} ads - Array of normalized ad objects
+ * @returns {number} Number of successfully inserted/updated rows
  */
 function insertAds(ads: any[]): number {
   if (ads.length === 0) return 0;
@@ -209,7 +222,11 @@ function insertAds(ads: any[]): number {
 }
 
 /**
- * Sync a single page of OLX listings
+ * Synchronizes a single page of OLX listings and saves them to the database.
+ * 
+ * @param {('sale'|'rent')} dealType - Type of operation
+ * @param {number} page - Page number to sync (default: 1)
+ * @returns {Promise<{success: boolean, count: number, totalAdsFound?: number, hasMore?: boolean, message?: string}>}
  */
 export async function syncOLX(dealType: 'sale' | 'rent', page = 1) {
   try {
@@ -229,8 +246,12 @@ export async function syncOLX(dealType: 'sale' | 'rent', page = 1) {
 }
 
 /**
- * Sync ALL pages of OLX listings (up to MAX_PAGES).
- * Returns progress updates via optional callback.
+ * Fully synchronizes all available pages of OLX listings (up to MAX_PAGES).
+ * Implements intelligent anti-bot delays and consecutive error handling to prevent IP bans.
+ * 
+ * @param {('sale'|'rent')} dealType - Type of operation
+ * @param {number} maxPages - Absolute maximum pages to scrape (default: 50)
+ * @returns {Promise<{success: boolean, totalInserted: number, totalFound: number, pagesScraped: number, message: string}>}
  */
 export async function syncOLXAllPages(
   dealType: 'sale' | 'rent',

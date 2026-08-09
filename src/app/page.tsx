@@ -22,6 +22,11 @@ interface ToastMessage {
 
 let toastIdCounter = 0;
 
+/**
+ * Main application entry point.
+ * Acts as the centralized state manager for filters, map bounds, synchronization,
+ * and data fetching. It connects the FilterPanel, Sidebar, and MapView components.
+ */
 export default function HomePage() {
   // Filter state
   const [dealType, setDealType] = useState<'sale' | 'rent'>('sale');
