@@ -599,20 +599,23 @@ a:hover {
 
 /* --- Price Bubble (Map Marker) --- */
 .price-bubble {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
+  background: white;
+  color: #0b1120; /* Very dark blue/black for contrast */
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 11px;
-  padding: 4px 8px;
+  font-size: 11.5px;
+  padding: 5px 9px;
   border-radius: var(--radius-md);
-  border: 2px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   white-space: nowrap;
   text-align: center;
   box-shadow: var(--shadow-md);
   transition: all var(--duration-fast) var(--ease-out);
   cursor: pointer;
-  position: relative;
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .price-bubble::after {
@@ -625,14 +628,14 @@ a:hover {
   height: 0;
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  border-top: 6px solid var(--border);
+  border-top: 6px solid white;
 }
 
 .price-bubble:hover {
   background: var(--accent);
   color: white;
   border-color: var(--accent);
-  transform: scale(1.08);
+  transform: translateX(-50%) scale(1.08);
   z-index: 1000 !important;
   box-shadow: var(--shadow-glow);
 }
@@ -641,22 +644,41 @@ a:hover {
   border-top-color: var(--accent);
 }
 
+.price-bubble.status-new {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+.price-bubble.status-new::after { border-top-color: var(--accent); }
+
 .price-bubble.status-favorite {
+  background: var(--status-favorite);
+  color: white;
   border-color: var(--status-favorite);
 }
+.price-bubble.status-favorite::after { border-top-color: var(--status-favorite); }
 
 .price-bubble.status-call {
+  background: var(--status-call);
+  color: white;
   border-color: var(--status-call);
 }
+.price-bubble.status-call::after { border-top-color: var(--status-call); }
 
 .price-bubble.status-viewing {
+  background: var(--status-viewing);
+  color: white;
   border-color: var(--status-viewing);
 }
+.price-bubble.status-viewing::after { border-top-color: var(--status-viewing); }
 
 .price-bubble.status-archived {
-  opacity: 0.5;
-  border-color: var(--status-archived);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  border-color: var(--border);
+  opacity: 0.7;
 }
+.price-bubble.status-archived::after { border-top-color: var(--border); }
 
 /* --- Cluster Icon --- */
 .cluster-icon {
@@ -689,7 +711,7 @@ a:hover {
   width: 300px;
 }
 
-.house-popup .leaflet-popup-content-wrapper {
+.house-popup-wrapper .leaflet-popup-content-wrapper {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -697,12 +719,12 @@ a:hover {
   padding: 0;
 }
 
-.house-popup .leaflet-popup-tip {
+.house-popup-wrapper .leaflet-popup-tip {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
 }
 
-.house-popup .leaflet-popup-content {
+.house-popup-wrapper .leaflet-popup-content {
   margin: 0;
   width: 100% !important;
 }
@@ -762,6 +784,7 @@ a:hover {
 
 .popup-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-sm);
   margin-bottom: var(--space-sm);
 }
@@ -1022,15 +1045,23 @@ a:hover {
 }
 
 .leaflet-popup-close-button {
-  color: var(--text-secondary) !important;
+  color: white !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  border-radius: var(--radius-full);
   font-size: 18px !important;
   width: 24px !important;
   height: 24px !important;
-  padding: 4px !important;
+  padding: 2px !important;
+  margin: 6px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .leaflet-popup-close-button:hover {
-  color: var(--text-primary) !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  transform: scale(1.1);
 }
 
 /* --- Responsive --- */
@@ -1040,29 +1071,100 @@ a:hover {
   }
 
   .app-body {
+    position: relative;
     flex-direction: column;
   }
 
-  .sidebar {
+  .map-container {
+    height: 100%;
     width: 100%;
-    height: 50vh;
-    border-right: none;
-    border-top: 1px solid var(--border);
-    order: 2;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
   }
 
-  .map-container {
-    height: 50vh;
-    order: 1;
+  /* Sidebar acts as a bottom sheet or full overlay */
+  .sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 200;
+    transform: translateY(100%);
+    transition: transform 0.3s var(--ease-spring);
+    background: var(--bg-primary); /* Less transparent for readability */
+    border-top: 1px solid var(--border);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateY(0);
   }
 
   .filter-bar {
-    padding: 0 var(--space-md);
+    padding: 8px var(--space-md);
     gap: var(--space-sm);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filter-bar::-webkit-scrollbar {
+    display: none;
   }
 
   .header-stats {
     display: none;
+  }
+
+  /* Ensure the popup fits mobile screens */
+  .house-popup {
+    width: 250px;
+  }
+}
+
+/* --- Mobile FAB Button --- */
+.mobile-fab {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 150;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 12px 24px;
+    border-radius: var(--radius-full);
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-lg), 0 0 20px rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: all 0.2s var(--ease-out);
+    font-family: var(--font-body);
+  }
+
+  .mobile-fab:active {
+    transform: translateX(-50%) scale(0.95);
+  }
+
+  /* When sidebar is open, we need the button to be on top of the sidebar */
+  .sidebar.mobile-open ~ .mobile-fab,
+  .mobile-fab.fab-open {
+    z-index: 250;
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
   }
 }
 

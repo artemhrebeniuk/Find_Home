@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { syncOLX, syncOLXAllPages } from '@/lib/olx';
-import { syncDomRia, isDomRiaConfigured } from '@/lib/domria';
+import { syncDomRia, syncDomRiaAllPages, isDomRiaConfigured } from '@/lib/domria';
 
 /**
  * POST /api/sync
@@ -53,19 +53,35 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
 
-      const pageNum = page ? parseInt(page, 10) : 0;
-      const result = await syncDomRia(dealType, pageNum);
+      if (mode === 'full') {
+        const result = await syncDomRiaAllPages(dealType);
+        
+        if (!result.success) {
+          return NextResponse.json({ error: result.message }, { status: 500 });
+        }
 
-      if (!result.success) {
-        return NextResponse.json({ error: result.message }, { status: 500 });
+        return NextResponse.json({
+          success: true,
+          message: result.message,
+          inserted: result.totalInserted,
+          total_found: result.totalFound,
+          pages_scraped: result.pagesScraped,
+        });
+      } else {
+        const pageNum = page ? parseInt(page, 10) : 0;
+        const result = await syncDomRia(dealType, pageNum);
+
+        if (!result.success) {
+          return NextResponse.json({ error: result.message }, { status: 500 });
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: `Синхронізовано ${result.count} будинків з DOM.RIA`,
+          inserted: result.count,
+          total_found: result.totalAdsFound,
+        });
       }
-
-      return NextResponse.json({
-        success: true,
-        message: `Синхронізовано ${result.count} будинків з DOM.RIA`,
-        inserted: result.count,
-        total_found: result.totalAdsFound,
-      });
     } else {
       return NextResponse.json({ error: 'Невірне джерело. Використовуйте olx або domria.' }, { status: 400 });
     }

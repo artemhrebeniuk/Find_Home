@@ -48,10 +48,11 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
 
     const parsedAds = [];
 
+    let processedCount = 0;
     // Process ALL items from the page (no artificial limit)
     for (const id of itemIds) {
       try {
-        const infoUrl = `${BASE_URL}/info?realty_id=${id}&api_key=${DOMRIA_API_KEY}`;
+        const infoUrl = `${BASE_URL}/info/${id}?api_key=${DOMRIA_API_KEY}`;
         const infoRes = await fetch(infoUrl);
         if (!infoRes.ok) {
           console.warn(`[DOM.RIA] Failed to fetch info for ${id}: ${infoRes.status}`);
@@ -65,12 +66,20 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
         const description = ad.description || '';
         const source_url = `https://dom.ria.com/uk/${ad.beautiful_url}`;
 
+        const buildPhoto = (path: string | null) => {
+          if (!path) return null;
+          return `https://cdn.riastatic.com/photos/${path}`.replace(/\.(jpg|jpeg|png)$/i, 'b.webp');
+        };
+
         // Photos — real photos from the listing
-        const photo_url = ad.main_photo ? `https://cdn.riastatic.com/photosnew${ad.main_photo}` : null;
+        const photo_url = buildPhoto(ad.main_photo);
         const photos: string[] = [];
         if (ad.photos) {
           for (const p of Object.values(ad.photos) as any[]) {
-            if (p.file) photos.push(`https://cdn.riastatic.com/photosnew${p.file}`);
+            if (p.file) {
+              const url = buildPhoto(p.file);
+              if (url) photos.push(url);
+            }
           }
         }
 
@@ -115,6 +124,11 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
           nearest_city: nearest.city,
           distance_to_city: nearest.distance,
         });
+
+        processedCount++;
+        if (processedCount % 10 === 0) {
+          console.log(`[DOM.RIA] Processed ${processedCount}/${itemIds.length} items on page ${page}...`);
+        }
 
         // Rate limit delay — DOM.RIA free tier is limited
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -164,4 +178,62 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
     console.error('[DOM.RIA] Sync error:', error);
     return { success: false, count: 0, message: error.message };
   }
+}
+
+/**
+ * Synchronizes ALL available pages from DOM.RIA without limits.
+ * 
+ * @param {('sale'|'rent')} dealType - Type of real estate operation to fetch.
+ */
+export async function syncDomRiaAllPages(dealType: 'sale' | 'rent') {
+  if (!DOMRIA_API_KEY) {
+    return {
+      success: false,
+      message: 'DOM.RIA API ключ не налаштований. Встановіть DOMRIA_API_KEY в .env.local',
+      totalInserted: 0,
+      totalFound: 0,
+      pagesScraped: 0,
+    };
+  }
+
+  const MAX_PAGES = 999;
+  let page = 0;
+  let hasMore = true;
+  let totalInserted = 0;
+  let totalFound = 0;
+
+  console.log(`[DOM.RIA] === Запуск повної синхронізації DOM.RIA для '${dealType}' ===`);
+
+  while (hasMore && page < MAX_PAGES) {
+    console.log(`[DOM.RIA] ---> Запит сторінки ${page}...`);
+    const result = await syncDomRia(dealType, page);
+    
+    if (!result.success) {
+      console.warn(`[DOM.RIA] Помилка на сторінці ${page}: ${result.message}`);
+      break; 
+    }
+
+    if (result.count === 0 && (!result.totalAdsFound || result.totalAdsFound === 0)) {
+      console.log(`[DOM.RIA] На сторінці ${page} не знайдено нових оголошень. Завершення синхронізації.`);
+      hasMore = false;
+    } else {
+      totalInserted += result.count;
+      totalFound += result.totalAdsFound || 0;
+      page++;
+      
+      console.log(`[DOM.RIA] <--- Сторінка ${page-1} успішно оброблена. Додано/Оновлено: ${result.count}. Всього: ${totalInserted}`);
+      // Small delay between pages
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+  }
+
+  console.log(`[DOM.RIA] === Повна синхронізація DOM.RIA завершена! Оброблено сторінок: ${page}, Всього збережено: ${totalInserted} ===`);
+  
+  return {
+    success: true,
+    message: `Повна синхронізація DOM.RIA завершена. Зібрано ${page} сторінок.`,
+    totalInserted,
+    totalFound,
+    pagesScraped: page,
+  };
 }

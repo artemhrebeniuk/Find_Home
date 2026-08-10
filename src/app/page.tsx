@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { Star, Calendar, Home, CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
+import { Star, Calendar, Home, CheckCircle2, AlertCircle, Info, X, Map as MapIcon, List as ListIcon } from 'lucide-react';
 import FilterPanel from '@/components/FilterPanel';
 import Sidebar from '@/components/Sidebar';
 import type { HouseWithCRM, CRMStatus } from '@/lib/types';
@@ -46,6 +46,9 @@ export default function HomePage() {
 
   // Sync state
   const [syncing, setSyncing] = useState<string | null>(null); // 'olx' | 'domria' | null
+
+  // Mobile View state ('map' or 'list')
+  const [mobileViewMode, setMobileViewMode] = useState<'map' | 'list'>('map');
 
   // Toast state
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -117,8 +120,8 @@ export default function HomePage() {
         body: JSON.stringify({
           source,
           deal_type: dealType,
-          mode: source === 'olx' ? 'full' : undefined,
-          page: source === 'domria' ? 0 : undefined,
+          mode: 'full',
+          page: 0,
         }),
       });
 
@@ -256,6 +259,7 @@ export default function HomePage() {
           onSortChange={setSort}
           onStatusChange={handleStatusChange}
           onNotesChange={handleNotesChange}
+          mobileViewMode={mobileViewMode}
         />
         <MapView
           houses={houses}
@@ -265,6 +269,24 @@ export default function HomePage() {
           onNotesChange={handleNotesChange}
           mapBounds={mapBounds}
         />
+        
+        {/* Mobile FAB */}
+        <button 
+          className={`mobile-fab ${mobileViewMode === 'list' ? 'fab-open' : ''}`}
+          onClick={() => setMobileViewMode(prev => prev === 'map' ? 'list' : 'map')}
+        >
+          {mobileViewMode === 'map' ? (
+            <>
+              <ListIcon size={18} />
+              Списком
+            </>
+          ) : (
+            <>
+              <MapIcon size={18} />
+              На карті
+            </>
+          )}
+        </button>
       </div>
 
       {/* Toast notifications */}

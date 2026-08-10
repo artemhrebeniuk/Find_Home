@@ -10,7 +10,7 @@ const OLX_HEADERS = {
 
 const UAH_TO_USD_RATE = 41.5; // Approximate exchange rate
 
-const MAX_PAGES = 50; // Up to ~2000 listings
+const MAX_PAGES = 999; // Remove artificial limit, fetch until OLX returns 404 or no more pages
 const DELAY_BETWEEN_PAGES_MS = 2000; // 2 seconds between pages to avoid bans
 
 /**
@@ -46,7 +46,11 @@ async function parseOLXPage(dealType: 'sale' | 'rent', page: number): Promise<{
     : '/uk/nedvizhimost/doma/arenda-domov/';
   const url = `https://www.olx.ua${categoryPath}?page=${page}`;
 
-  console.log(`[OLX] Fetching page ${page}: ${url}`);
+  const startFetchTime = Date.now();
+  console.log(`[OLX-SYSTEM] ------------------------------------------------`);
+  console.log(`[OLX-SYSTEM] 🌐 ПАРСИНГ СТОРІНКИ: ${page}`);
+  console.log(`[OLX-SYSTEM] 🔗 URL: ${url}`);
+  console.log(`[OLX-SYSTEM] ------------------------------------------------`);
 
   const response = await fetch(url, { headers: OLX_HEADERS });
   if (!response.ok) {
@@ -170,6 +174,9 @@ async function parseOLXPage(dealType: 'sale' | 'rent', page: number): Promise<{
   // Determine if there are more pages
   const totalPages = state.listing?.listing?.totalPages || 0;
   const hasMore = page < totalPages && parsedAds.length > 0;
+  
+  const fetchDuration = ((Date.now() - startFetchTime) / 1000).toFixed(2);
+  console.log(`[OLX-SYSTEM] ✅ Оброблено за ${fetchDuration} сек. Знайдено об'єктів: ${parsedAds.length}. Всього сторінок доступно: ${totalPages}`);
 
   return { ads: parsedAds, hasMore };
 }
@@ -295,10 +302,11 @@ export async function syncOLXAllPages(
       totalFound += ads.length;
       pagesScraped++;
 
-      console.log(`[OLX] Page ${page}: found ${ads.length}, inserted ${insertedCount} (total: ${totalInserted})`);
+      console.log(`[OLX-SYSTEM] 💾 Збережено в БД: ${insertedCount} нових/оновлених з ${ads.length} знайдених на сторінці.`);
+      console.log(`[OLX-SYSTEM] 📈 Загальний прогрес: ${totalInserted} збережено загалом.`);
 
       if (!hasMore) {
-        console.log(`[OLX] No more pages after page ${page}.`);
+        console.log(`[OLX-SYSTEM] 🏁 Кінець даних від OLX (досягнуто ліміту сторінок: ${page}).`);
         break;
       }
 
@@ -321,7 +329,7 @@ export async function syncOLXAllPages(
   }
 
   const message = `Зібрано ${totalFound} оголошень з ${pagesScraped} сторінок, додано/оновлено ${totalInserted}`;
-  console.log(`[OLX] Sync complete: ${message}`);
+  console.log(`[OLX-SYSTEM] 🎉 СИНХРОНІЗАЦІЯ ЗАВЕРШЕНА! ${message}`);
 
   return {
     success: totalInserted > 0 || pagesScraped > 0,

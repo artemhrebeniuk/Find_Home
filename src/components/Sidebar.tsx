@@ -11,6 +11,7 @@ interface SidebarProps {
   selectedHouseId: number | null;
   sort: string;
   loading: boolean;
+  mobileViewMode?: 'map' | 'list';
   onHouseSelect: (id: number) => void;
   onSortChange: (sort: string) => void;
   onStatusChange: (id: number, status: CRMStatus) => void;
@@ -26,13 +27,14 @@ export default function Sidebar({
   selectedHouseId,
   sort,
   loading,
+  mobileViewMode = 'map',
   onHouseSelect,
   onSortChange,
   onStatusChange,
   onNotesChange,
 }: SidebarProps) {
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${mobileViewMode === 'list' ? 'mobile-open' : ''}`}>
       <div className="sidebar-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span className="sidebar-title">Результати</span>
