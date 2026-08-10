@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
+import db, { setupDb } from '@/lib/db';
 
 /**
  * PATCH /api/houses/[id]/status
@@ -31,13 +31,18 @@ export async function PATCH(
     }
 
     // Upsert CRM record
-    db.prepare(`
+    // Upsert CRM record
+    await setupDb();
+    await db.execute({
+      sql: `
       INSERT INTO house_crm (house_id, status, updated_at)
       VALUES (?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(house_id) DO UPDATE SET
         status = excluded.status,
         updated_at = CURRENT_TIMESTAMP
-    `).run(houseId, status);
+    `,
+      args: [houseId, status]
+    });
 
     return NextResponse.json({ success: true, house_id: houseId, status });
   } catch (error) {

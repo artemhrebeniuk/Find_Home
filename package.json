@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
+    "@libsql/client": "^0.17.4",
     "cheerio": "^1.2.0",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",

@@ -1,4 +1,4 @@
-import db from './db';
+import db, { setupDb } from './db';
 import { findNearestCity } from './geo';
 
 const DOMRIA_API_KEY = process.env.DOMRIA_API_KEY;
@@ -137,17 +137,18 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
       }
     }
 
-    const insertStmt = db.prepare(`
+    await setupDb();
+    const sql = `
       INSERT INTO houses (
         external_id, source, deal_type, title, description, price, currency, price_uah,
         latitude, longitude, region, city, district, address,
         area_total, area_land, rooms, floors, year_built,
         photo_url, photos, source_url, nearest_city, distance_to_city
       ) VALUES (
-        @external_id, @source, @deal_type, @title, @description, @price, @currency, @price_uah,
-        @latitude, @longitude, @region, @city, @district, @address,
-        @area_total, @area_land, @rooms, @floors, @year_built,
-        @photo_url, @photos, @source_url, @nearest_city, @distance_to_city
+        ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?
       ) ON CONFLICT(external_id) DO UPDATE SET
         price = excluded.price,
         price_uah = excluded.price_uah,
@@ -156,22 +157,27 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
         title = excluded.title,
         description = excluded.description,
         updated_at = CURRENT_TIMESTAMP
-    `);
+    `;
 
-    const insertAll = db.transaction((adsToInsert: any[]) => {
-      let count = 0;
-      for (const ad of adsToInsert) {
-        try {
-          insertStmt.run(ad);
-          count++;
-        } catch (e) {
-          console.error(`[DOM.RIA] Error inserting ad ${ad.external_id}:`, e);
-        }
+    const tx = await db.transaction("write");
+    let insertedCount = 0;
+    for (const ad of parsedAds) {
+      try {
+        await tx.execute({
+          sql,
+          args: [
+            ad.external_id, ad.source, ad.deal_type, ad.title, ad.description, ad.price, ad.currency, ad.price_uah,
+            ad.latitude, ad.longitude, ad.region, ad.city, ad.district, ad.address,
+            ad.area_total, ad.area_land, ad.rooms, ad.floors, ad.year_built,
+            ad.photo_url, ad.photos, ad.source_url, ad.nearest_city, ad.distance_to_city
+          ]
+        });
+        insertedCount++;
+      } catch (e) {
+        console.error(`[DOM.RIA] Error inserting ad ${ad.external_id}:`, e);
       }
-      return count;
-    });
-
-    const insertedCount = insertAll(parsedAds);
+    }
+    await tx.commit();
 
     return { success: true, count: insertedCount, totalAdsFound: parsedAds.length };
   } catch (error: any) {

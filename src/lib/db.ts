@@ -1,34 +1,38 @@
-import Database from 'better-sqlite3';
+import { createClient, Client } from '@libsql/client';
 import path from 'path';
 
 /**
- * Database path resolution.
- * The database is stored in the root of the project.
+ * Database client resolution.
+ * Automatically uses Turso if TURSO_DATABASE_URL is set,
+ * otherwise falls back to local findhome.db file for local dev.
  */
-const DB_PATH = path.resolve(process.cwd(), 'findhome.db');
+const url = process.env.TURSO_DATABASE_URL || `file:${path.resolve(process.cwd(), 'findhome.db')}`;
+const authToken = process.env.TURSO_AUTH_TOKEN;
 
-// Singleton for dev hot-reload to prevent multiple connections in Next.js dev server
-const globalForDb = globalThis as unknown as { __db?: Database.Database };
+// Singleton for dev hot-reload
+const globalForDb = globalThis as unknown as { __db?: Client };
+
+function getDbClient(): Client {
+  if (globalForDb.__db) return globalForDb.__db;
+  
+  const client = createClient({ url, authToken });
+  globalForDb.__db = client;
+  return client;
+}
+
+export const db = getDbClient();
+export default db;
 
 /**
- * Initializes and returns a singleton instance of the better-sqlite3 database.
- * Also automatically creates the required tables (houses, house_crm) and indexes
- * if they do not exist.
- * 
- * @returns {Database.Database} The SQLite database connection
+ * Initialize unified database schema.
+ * Since libsql is async, this must be called before operating on a fresh database.
  */
-function getDb(): Database.Database {
-  if (globalForDb.__db) return globalForDb.__db;
+let schemaSetupPromise: Promise<void> | null = null;
 
-  const db = new Database(DB_PATH);
-  
-  // Enable Write-Ahead Logging for better concurrent performance
-  db.pragma('journal_mode = WAL');
-  // Enable Foreign Keys for relational integrity between houses and CRM
-  db.pragma('foreign_keys = ON');
+export async function setupDb(): Promise<void> {
+  if (schemaSetupPromise) return schemaSetupPromise;
 
-  // Initialize unified database schema
-  db.exec(`
+  schemaSetupPromise = db.executeMultiple(`
     CREATE TABLE IF NOT EXISTS houses (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       external_id TEXT UNIQUE NOT NULL,
@@ -77,10 +81,6 @@ function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_crm_status ON house_crm(status);
     CREATE INDEX IF NOT EXISTS idx_houses_external ON houses(external_id);
   `);
-
-  globalForDb.__db = db;
-  return db;
+  
+  return schemaSetupPromise;
 }
-
-export const db = getDb();
-export default db;

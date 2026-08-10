@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import db from '@/lib/db';
+import db, { setupDb } from '@/lib/db';
 import type { HouseWithCRM } from '@/lib/types';
 
 /**
@@ -87,7 +87,9 @@ export async function GET(request: NextRequest) {
   `;
 
   try {
-    const houses = db.prepare(query).all(...params) as HouseWithCRM[];
+    await setupDb();
+    const result = await db.execute({ sql: query, args: params });
+    const houses = result.rows as unknown as HouseWithCRM[];
     return NextResponse.json({ houses, count: houses.length });
   } catch (error) {
     console.error('Error fetching houses:', error);
@@ -103,10 +105,9 @@ export async function GET(request: NextRequest) {
  */
 export async function DELETE() {
   try {
-    // This wipes the houses table. Due to ON DELETE CASCADE or by clearing both, it will clear everything.
-    // In our SQLite setup, house_crm does ON DELETE CASCADE, but let's be safe and clear both.
-    db.prepare('DELETE FROM house_crm').run();
-    db.prepare('DELETE FROM houses').run();
+    await setupDb();
+    await db.execute('DELETE FROM house_crm');
+    await db.execute('DELETE FROM houses');
     
     return NextResponse.json({ success: true, message: 'Усі будинки видалено успішно' });
   } catch (error) {
