@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { Star, Calendar, Home, CheckCircle2, AlertCircle, Info, X, Map as MapIcon, List as ListIcon } from 'lucide-react';
 import FilterPanel from '@/components/FilterPanel';
 import Sidebar from '@/components/Sidebar';
@@ -94,50 +95,106 @@ export default function HomePage() {
     return () => clearTimeout(fetchTimerRef.current);
   }, [fetchHouses]);
 
+  // Switch deal type and reset price filters to avoid cross-currency mixups
+  const handleDealTypeChange = useCallback((newDealType: 'sale' | 'rent') => {
+    if (newDealType === dealType) return;
+    setDealType(newDealType);
+    setPriceMin('');
+    setPriceMax('');
+    setSelectedHouseId(null);
+  }, [dealType]);
+
   // Update map bounds when region changes
-  useEffect(() => {
-    if (region === 'all') {
+  const handleRegionChange = useCallback((newRegion: string) => {
+    setRegion(newRegion);
+    if (newRegion === 'all') {
       setMapBounds(null);
     } else {
-      const r = REGIONS.find(reg => reg.name === region);
+      const r = REGIONS.find(reg => reg.name === newRegion);
       if (r) {
         setMapBounds({ sw: r.bounds.sw as [number, number], ne: r.bounds.ne as [number, number] });
       }
     }
-  }, [region]);
+  }, []);
 
-  // Sync handler — replaces alert() with toast
+  const abortSyncRef = useRef<boolean>(false);
+
+  // Progressive streaming sync handler — updates map & sidebar every page
   const handleSync = useCallback(async (source: 'olx' | 'domria') => {
-    if (syncing) return; // Prevent double-sync
+    if (syncing) {
+      // Clicking while running will safely abort
+      abortSyncRef.current = true;
+      showToast('info', 'Зупиняємо синхронізацію після поточної сторінки...');
+      return;
+    }
 
+    abortSyncRef.current = false;
     setSyncing(source);
     const sourceName = source === 'olx' ? 'OLX' : 'DOM.RIA';
-    showToast('info', `Синхронізація ${sourceName} почалась... Зачекайте.`);
+    const typeLabel = dealType === 'rent' ? 'Оренда' : 'Купівля';
+    const maxPages = source === 'olx' ? (dealType === 'rent' ? 20 : 28) : 10;
+
+    let accumulatedFound = 0;
+    let accumulatedInserted = 0;
+    let pagesCompleted = 0;
+
     try {
-      const res = await fetch('/api/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source,
-          deal_type: dealType,
-          mode: 'full',
-          page: 0,
-        }),
-      });
+      showToast('info', `Початок синхронізації ${sourceName} (${typeLabel})...`);
 
-      const data = await res.json();
+      for (let p = 1; p <= maxPages; p++) {
+        if (abortSyncRef.current) {
+          showToast('info', `Синхронізацію зупинено.`);
+          break;
+        }
 
-      if (data.success) {
-        showToast('success', `${data.message}`);
-        // Refresh the data without page reload
+        showToast('info', `Синхронізація ${sourceName} (${typeLabel}): стор. ${p}/${maxPages}... (зібрано ${accumulatedInserted})`);
+
+        const res = await fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source,
+            deal_type: dealType,
+            page: p,
+          }),
+        });
+
+        if (!res.ok) {
+          showToast('error', `Помилка запиту на сторінці ${p}`);
+          break;
+        }
+
+        const data = await res.json();
+
+        if (!data.success) {
+          showToast('error', `${data.error || 'Помилка синхронізації'}`);
+          break;
+        }
+
+        accumulatedInserted += data.inserted || 0;
+        accumulatedFound += data.total_found || 0;
+        pagesCompleted++;
+
+        // Instantly refresh map & sidebar list with the newly added houses!
         fetchHouses();
-      } else {
-        showToast('error', `${data.error || 'Помилка синхронізації'}`);
+
+        // If no more listings or reached catalog end, stop immediately
+        if (!data.has_more || data.total_found === 0) {
+          break;
+        }
+
+        // Brief delay between pages
+        await new Promise(r => setTimeout(r, 400));
       }
-    } catch (e) {
+
+      if (accumulatedInserted > 0 || pagesCompleted > 0) {
+        showToast('success', `🎉 Готово! Синхронізовано ${accumulatedInserted} будинків (${pagesCompleted} стор.)`);
+      }
+    } catch {
       showToast('error', `Помилка з'єднання з сервером`);
     } finally {
       setSyncing(null);
+      fetchHouses();
     }
   }, [syncing, dealType, showToast, fetchHouses]);
 
@@ -152,7 +209,23 @@ export default function HomePage() {
       } else {
         showToast('error', `${data.error}`);
       }
-    } catch (e) {
+    } catch {
+      showToast('error', `Помилка з'єднання з сервером`);
+    }
+  }, [showToast, fetchHouses]);
+
+  const handleRestore = useCallback(async () => {
+    try {
+      showToast('info', 'Відновлення перевіреної бази даних...');
+      const res = await fetch('/api/seed', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        showToast('success', `${data.message}`);
+        fetchHouses();
+      } else {
+        showToast('error', `${data.error || 'Помилка відновлення'}`);
+      }
+    } catch {
       showToast('error', `Помилка з'єднання з сервером`);
     }
   }, [showToast, fetchHouses]);
@@ -207,12 +280,12 @@ export default function HomePage() {
     <div className="app-layout">
       {/* Header */}
       <header className="app-header">
-        <a className="app-logo" href="/">
+        <Link className="app-logo" href="/">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M3 12L12 3L21 12V21H15V15H9V21H3V12Z" />
           </svg>
           Find<span>Home</span>
-        </a>
+        </Link>
         <div className="header-stats">
           <div className="header-stat">
             <Star size={16} />
@@ -239,13 +312,14 @@ export default function HomePage() {
         priceMax={priceMax}
         activeStatuses={activeStatuses}
         syncing={syncing}
-        onDealTypeChange={setDealType}
-        onRegionChange={setRegion}
+        onDealTypeChange={handleDealTypeChange}
+        onRegionChange={handleRegionChange}
         onPriceMinChange={setPriceMin}
         onPriceMaxChange={setPriceMax}
         onStatusToggle={handleStatusToggle}
         onSync={handleSync}
         onClear={handleClear}
+        onRestore={handleRestore}
       />
 
       {/* Main Body: Sidebar + Map */}

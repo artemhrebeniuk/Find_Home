@@ -59,12 +59,90 @@ export const MAJOR_CITIES: UkraineCity[] = [
   { name: 'Миколаїв', lat: 46.9750, lng: 31.9946, region_id: 11 },
   { name: 'Херсон', lat: 46.6354, lng: 32.6169, region_id: 18 },
   { name: 'Чернівці', lat: 48.2920, lng: 25.9358, region_id: 21 },
+  // Дніпропетровська
+  { name: 'Кривий Ріг', lat: 47.9105, lng: 33.3918, region_id: 3 },
+  { name: 'Кам\'янське', lat: 48.5167, lng: 34.6, region_id: 3 },
+  { name: 'Нікополь', lat: 47.5675, lng: 34.3948, region_id: 3 },
+  { name: 'Павлоград', lat: 48.5333, lng: 35.8667, region_id: 3 },
+  { name: 'Новомосковськ', lat: 48.6333, lng: 35.2167, region_id: 3 },
+  { name: 'Царичанка', lat: 48.9417, lng: 34.4833, region_id: 3 },
+  // Київська
   { name: 'Біла Церква', lat: 49.7958, lng: 30.1090, region_id: 8 },
   { name: 'Бориспіль', lat: 50.3533, lng: 30.9550, region_id: 8 },
   { name: 'Ірпінь', lat: 50.5218, lng: 30.2530, region_id: 8 },
   { name: 'Буча', lat: 50.5479, lng: 30.2150, region_id: 8 },
+  { name: 'Бровари', lat: 50.5114, lng: 30.7903, region_id: 8 },
+  { name: 'Боярка', lat: 50.3292, lng: 30.2972, region_id: 8 },
+  { name: 'Вишневе', lat: 50.3889, lng: 30.3708, region_id: 8 },
+  { name: 'Васильків', lat: 50.1783, lng: 30.3167, region_id: 8 },
+  { name: 'Обухів', lat: 50.1167, lng: 30.6333, region_id: 8 },
+  { name: 'Фастів', lat: 50.0833, lng: 29.9167, region_id: 8 },
+  { name: 'Переяслав', lat: 50.0667, lng: 31.45, region_id: 8 },
+  { name: 'Софіївська Борщагівка', lat: 50.41, lng: 30.37, region_id: 8 },
+  { name: 'Святопетрівське', lat: 50.39, lng: 30.32, region_id: 8 },
+  { name: 'Петропавлівська Борщагівка', lat: 50.43, lng: 30.33, region_id: 8 },
+  { name: 'Новосілки', lat: 50.36, lng: 30.45, region_id: 8 },
+  { name: 'Гатне', lat: 50.36, lng: 30.39, region_id: 8 },
+  { name: 'Хотів', lat: 50.33, lng: 30.47, region_id: 8 },
+  { name: 'Козин', lat: 50.22, lng: 30.67, region_id: 8 },
+  { name: 'Ворзель', lat: 50.55, lng: 30.15, region_id: 8 },
+  { name: 'Гостомель', lat: 50.57, lng: 30.27, region_id: 8 },
+  // Одеська
+  { name: 'Чорноморськ', lat: 46.3014, lng: 30.6567, region_id: 12 },
+  { name: 'Ізмаїл', lat: 45.35, lng: 28.8333, region_id: 12 },
+  { name: 'Білгород-Дністровський', lat: 46.1833, lng: 30.3333, region_id: 12 },
+  { name: 'Грибівка', lat: 46.2, lng: 30.58, region_id: 12 },
+  { name: 'Затока', lat: 46.06, lng: 30.45, region_id: 12 },
+  { name: 'Кароліно-Бугаз', lat: 46.14, lng: 30.52, region_id: 12 },
+  // Львівська
+  { name: 'Дрогобич', lat: 49.35, lng: 23.5, region_id: 10 },
+  { name: 'Стрий', lat: 49.25, lng: 23.85, region_id: 10 },
+  { name: 'Трускавець', lat: 49.2786, lng: 23.5042, region_id: 10 },
+  { name: 'Червоноград', lat: 50.3833, lng: 24.2333, region_id: 10 },
+  { name: 'Самбір', lat: 49.5167, lng: 23.2, region_id: 10 },
+  // Полтавська
   { name: 'Кременчук', lat: 49.0665, lng: 33.4207, region_id: 13 },
+  { name: 'Миргород', lat: 49.9667, lng: 33.6, region_id: 13 },
+  { name: 'Лубни', lat: 50.0167, lng: 33.0, region_id: 13 },
+  // Закарпатська
   { name: 'Мукачево', lat: 48.4414, lng: 22.7178, region_id: 5 },
+  { name: 'Хуст', lat: 48.1833, lng: 23.3, region_id: 5 },
+  { name: 'Берегове', lat: 48.2, lng: 22.65, region_id: 5 },
+  // Івано-Франківська
+  { name: 'Калуш', lat: 49.0333, lng: 24.3667, region_id: 7 },
+  { name: 'Коломия', lat: 48.5333, lng: 25.0333, region_id: 7 },
+  { name: 'Яремче', lat: 48.45, lng: 24.55, region_id: 7 },
+  // Миколаївська
+  { name: 'Очаків', lat: 46.6139, lng: 31.5489, region_id: 11 },
+  { name: 'Первомайськ', lat: 48.05, lng: 30.85, region_id: 11 },
+  { name: 'Вознесенськ', lat: 47.5667, lng: 31.3333, region_id: 11 },
+  // Черкаська
+  { name: 'Умань', lat: 48.75, lng: 30.2167, region_id: 20 },
+  { name: 'Сміла', lat: 49.2167, lng: 31.8667, region_id: 20 },
+  // Волинська
+  { name: 'Ковель', lat: 51.2167, lng: 24.7167, region_id: 2 },
+  { name: 'Нововолинськ', lat: 50.7333, lng: 24.1667, region_id: 2 },
+  // Чернігівська
+  { name: 'Ніжин', lat: 51.05, lng: 31.8833, region_id: 22 },
+  { name: 'Прилуки', lat: 50.6, lng: 32.3833, region_id: 22 },
+  // Житомирська
+  { name: 'Бердичів', lat: 49.8833, lng: 28.5833, region_id: 4 },
+  { name: 'Коростень', lat: 50.95, lng: 28.6333, region_id: 4 },
+  { name: 'Новоград-Волинський', lat: 50.5833, lng: 27.6333, region_id: 4 },
+  // Хмельницька
+  { name: 'Кам\'янець-Подільський', lat: 48.6833, lng: 26.5833, region_id: 19 },
+  { name: 'Шепетівка', lat: 50.1833, lng: 27.0667, region_id: 19 },
+  // Рівненська
+  { name: 'Дубно', lat: 50.4167, lng: 25.75, region_id: 14 },
+  { name: 'Сарни', lat: 51.3333, lng: 26.6, region_id: 14 },
+  { name: 'Вараш', lat: 51.35, lng: 25.85, region_id: 14 },
+  // Сумська
+  { name: 'Конотоп', lat: 51.2333, lng: 33.2, region_id: 15 },
+  { name: 'Шостка', lat: 51.8667, lng: 33.4833, region_id: 15 },
+  { name: 'Охтирка', lat: 50.3167, lng: 34.9, region_id: 15 },
+  // Кіровоградська
+  { name: 'Олександрія', lat: 48.6667, lng: 33.1167, region_id: 9 },
+  { name: 'Світловодськ', lat: 49.05, lng: 33.2333, region_id: 9 },
 ];
 
 /**
@@ -136,33 +214,35 @@ export function formatDistance(km: number): string {
 /**
  * Formats a monetary value for UI display (e.g., "$15K", "₴1.5M").
  * 
- * @param {number} price - The raw price number
+ * @param {number | string} price - The raw price number
  * @param {string} currency - 'USD' or 'UAH' (default: 'USD')
  * @returns {string} Formatted price string with currency symbol
  */
-export function formatPrice(price: number, currency: string = 'USD'): string {
+export function formatPrice(price: number | string, currency: string = 'USD'): string {
+  const num = typeof price === 'number' ? price : parseFloat(String(price).replace(/\s+/g, '')) || 0;
   if (currency === 'UAH') {
-    if (price >= 1_000_000) return `₴${(price / 1_000_000).toFixed(1)}M`;
-    if (price >= 1_000) return `₴${Math.round(price / 1_000)}K`;
-    return `₴${price}`;
+    if (num >= 1_000_000) return `₴${(num / 1_000_000).toFixed(1)}M`;
+    if (num >= 1_000) return `₴${Math.round(num / 1_000).toLocaleString()}`;
+    return `₴${num}`;
   }
-  if (price >= 1_000_000) return `$${(price / 1_000_000).toFixed(1)}M`;
-  if (price >= 1_000) return `$${Math.round(price / 1_000).toLocaleString()}`;
-  return `$${price}`;
+  if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `$${Math.round(num / 1_000).toLocaleString()}`;
+  return `$${num}`;
 }
 
 /**
  * Minimal price formatter designed specifically for small map marker bubbles.
  * 
- * @param {number} price - The raw price number
+ * @param {number | string} price - The raw price number
  * @param {string} currency - 'USD' or 'UAH' (default: 'USD')
  * @returns {string} Compact formatted price string
  */
-export function formatPriceBubble(price: number, currency: string = 'USD'): string {
+export function formatPriceBubble(price: number | string, currency: string = 'USD'): string {
   const sym = currency === 'UAH' ? '₴' : '$';
-  if (price >= 1_000_000) return `${sym}${(price / 1_000_000).toFixed(1)}M`;
-  if (price >= 1_000) return `${sym}${Math.round(price / 1_000)}K`;
-  return `${sym}${price}`;
+  const num = typeof price === 'number' ? price : parseFloat(String(price).replace(/\s+/g, '')) || 0;
+  if (num >= 1_000_000) return `${sym}${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `${sym}${Math.round(num / 1_000)}K`;
+  return `${sym}${num}`;
 }
 
 /**

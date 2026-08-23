@@ -1,126 +1,174 @@
-# 🏠 FindHome — Automated Real Estate Search & Personal CRM
+# 🏠 FindHome — Пошуковий агрегатор нерухомості та персональна CRM
 
-[![Next.js](https://img.shields.io/badge/Framework-Next.js_14_(App_Router)-black.svg?style=flat-square&logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/UI-React_18-blue.svg?style=flat-square&logo=react)](https://react.dev/)
+[![Next.js](https://img.shields.io/badge/Framework-Next.js_16_(Turbopack)-black.svg?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/UI-React_19-blue.svg?style=flat-square&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript_5-blue.svg?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-[![SQLite](https://img.shields.io/badge/Database-SQLite3-003B57.svg?style=flat-square&logo=sqlite)](https://www.sqlite.org/)
+[![Turso](https://img.shields.io/badge/Database-Turso_(libSQL)-00D492.svg?style=flat-square&logo=sqlite)](https://turso.tech/)
 [![Leaflet](https://img.shields.io/badge/Map-Leaflet.js-199900.svg?style=flat-square&logo=leaflet)](https://leafletjs.com/)
+[![Vercel](https://img.shields.io/badge/Deploy-Vercel_Ready-black.svg?style=flat-square&logo=vercel)](https://vercel.com/)
 
-> **Architecture Overview:** **FindHome** is a personalized real estate aggregator and CRM platform designed to automate the search and analysis of private houses in Ukraine. It fetches live data directly from major Ukrainian property portals (OLX, DOM.RIA) using smart pagination and bypassing anti-bot limits, displaying listings on an interactive geographical map and a real-time updating side-panel with custom CRM tracking (Favorites, Calls, Viewings).
-
-An enterprise-grade full-stack web application built on **Next.js (App Router)** and **better-sqlite3**, featuring real-time web scraping, unified database mapping, interactive map clustering, and lead management wrapped in a premium Glassmorphism UI. Fully responsive and tested on all modern mobile and desktop devices.
+> **FindHome** — це інтелектуальний веб-агрегатор та персональна CRM-система для пошуку, моніторингу та аналізу **приватних будинків в Україні**. Додаток автоматично збирає пропозиції з провідних порталів (**OLX**, **DOM.RIA**), обходить захист Cloudflare за допомогою вбудованого Headless Chrome рушія, забезпечує 100% суворе розділення **Купівлі** та **Оренди**, і відображає об'єкти на інтерактивній гео-карті з кластеризацією та персональними статусами.
 
 ---
 
-## 📐 System Topology & Data Flow
+## 🌟 Ключові можливості
+
+### 1. 🔄 Потокова синхронізація (Progressive Live Streaming)
+* **Посторінковий збір даних**: Замість блокуючих тривалих запитів, скрейпінг працює посторінково (5–7 сек на сторінку).
+* **Миттєве відображення**: Нові будинки з'являються на карті та в списку в реальному часі після кожної обробленої сторінки.
+* **Кнопка «Зупинити»**: Можливість зупинити збір у будь-який момент в один клік.
+* **Чітка точка зупинки**: Автоматичне визначення кінця каталогу (наприклад, 26 сторінок для купівлі, 10–15 для оренди).
+
+### 2. 🛡️ 100% Суворе розділення «Купівля» ($) та «Оренда» (₴/міс)
+* **4-рівневий класифікатор**:
+  1. **URL-маршрутизація** (`prodazha-domov` проти `arenda-domov`).
+  2. **Ключові слова** у заголовках (*«продам / продаж»* проти *«здам / оренда / подобово»*).
+  3. **Формат цін** (наявність маркерів */міс*, */мес*).
+  4. **Цінова евристика** (відсіювання помилкових промо-оголошень).
+* **Ізоляція валют і фільтрів**:
+  * Купівля — виключно ціни в **доларах США ($)**.
+  * Оренда — виключно помісячні ціни в **гривнях (₴.../міс)**.
+  * Автоматичне очищення діапазону цін при перемиканні категорій.
+
+### 3. 🗺️ Інтерактивна гео-карта (Leaflet + MarkerCluster)
+* **Кластеризація маркерів**: Плавна робота карти з тисячами об'єктів без затримок.
+* **Кольорові бейджі цін**: На маркерах відображається ціна (`$45K`, `₴20K/м`) з підсвічуванням кольору поточного CRM-статусу.
+* **Інформативні попапи**: Фотографії у високій якості, площа будинку, сотки ділянки, кількість кімнат, відстань до найближчого великого міста, нотатки та пряме посилання на оригінал оголошення.
+
+### 4. 📋 Вбудована персональна CRM
+* **Статуси об'єктів**: `Нове` 🔵, `Обране` 🟡, `Зателефонувати` 🟣, `Перегляд` 🟢, `Архів` ⚫.
+* **Персональні нотатки**: Можливість залишати коментарі до кожного будинку (зберігаються в БД).
+* **Фільтрація за статусами**: Перегляд лише обраних об'єктів або будинків, призначених для дзвінка/перегляду.
+
+### 5. 📸 Оптимізація фотографій
+* Автоматичне перетворення фотографій з CDN OLX та DOM.RIA у формат високої чіткості (`800x600`, `.webp`).
+* Захист від битих зображень: елегантний SVG-плейсхолдер з іконкою будинку при відсутності фото або помилці завантаження.
+
+### 6. 🚀 Кнопка «Відновити базу»
+* Миттєве завантаження понад 1 800 перевірених будинків по всіх 24 областях України в 1 клік при очищенні або перевстановленні бази.
+
+---
+
+## 📐 Архітектура системи
 
 ```text
 +-----------------------------------------------------------------------------------+
-|                        FindHome Client Dashboard                                  |
-|    [ Glassmorphism UI / Interactive Map / Dynamic Filter Tabs / Mobile Ready ]    |
+|                        FindHome Web Application (Next.js 16)                     |
+|           [ Карта Leaflet / Сайдбар з картками / Живі фільтри / Мобільна версія ]  |
 +-----------------------------------------------------------------------------------+
-       |                        |                              |
-       | 1. Filter by Region    | 2. Sync from Portals         | 3. Set CRM Status
-       v                        v                              v
-+--------------------+  +-----------------------+  +--------------------------------+
-|  /api/houses       |  |  /api/sync            |  |  /api/houses/[id]/status       |
-|  Dynamic SQL Query |  |  Cheerio Web Scraper  |  |  SQLite State Management       |
-|  (Price, Status)   |  |  & DOM.RIA REST API   |  |  (Favorite, Call, Viewed)      |
-+--------------------+  +-----------------------+  +--------------------------------+
-       |                        |                              |
-       +------------------------+------------------------------+
-                                |
-                                v
+       |                                   |                              |
+       | 1. Запит об'єктів                 | 2. Посторінковий скрейпінг   | 3. Оновлення CRM
+       v                                   v                              v
++--------------------+            +-----------------------+      +-------------------+
+|  GET /api/houses   |            |  POST /api/sync       |      |  POST /api/crm    |
+|  SQL фільтрація:   |            |  • Headless Chrome    |      |  Статуси:         |
+|  deal_type, ціна,  |            |  • Cheerio HTML DOM   |      |  Обране, Дзвінок, |
+|  область, координати            |  • DOM.RIA REST API   |      |  Перегляд, Нотатки|
++--------------------+            +-----------------------+      +-------------------+
+       |                                   |                              |
+       +-----------------------------------+------------------------------+
+                                           |
+                                           v
 +-----------------------------------------------------------------------------------+
-|                  Local SQLite Database (findhome.db)                              |
-|        Unified schema • ON CONFLICT DO UPDATE • Relational CRM mapping            |
+|                  Хмарна база даних Turso DB (@libsql/client)                       |
+|           Таблиця `houses` (deal_type, ціни, координати, фото, характеристики)   |
+|           Таблиця `house_crm` (реляційний зв'язок статусів та нотаток)             |
 +-----------------------------------------------------------------------------------+
 ```
 
 ---
 
-## ⚙️ Technical Specifications
+## 🛠️ Стек технологій
 
-| Component | Technology / Protocol | Description |
+| Складова | Технологія | Призначення |
 | :--- | :--- | :--- |
-| **Framework** | Next.js (App Router) | High-performance React framework utilizing Route Handlers |
-| **Database** | SQLite (`better-sqlite3`) | High-speed synchronous local database for instant map filtering and CRM storage |
-| **Data Scraping** | `cheerio` & `node-fetch` | Intelligent DOM parsing for OLX with automatic pagination and rate limiting |
-| **API Integration** | DOM.RIA API | Official integration supporting massive data dumps, correct photo CDN routing (`photos/dom/photo`), and pagination |
-| **Mapping Engine** | Leaflet.js & React-Leaflet | Interactive geographical map with optimized marker clustering (`leaflet.markercluster`) |
-| **Styling** | Vanilla CSS (Glassmorphism) | Custom CSS design system with backdrop filters, dark mode, and dynamic color statuses |
-| **Mobile UX** | Horizontal Scroll & Gestures | Seamless experience on smaller screens (iPhone, Samsung, Xiaomi) with scrollable filters |
+| **Frontend & Backend** | [Next.js 16](https://nextjs.org/) (App Router, Turbopack) | Сучасний React-фреймворк з підтримкою серверних та клієнтських компонентів |
+| **Мова** | [TypeScript 5](https://www.typescriptlang.org/) | Типобезпечність коду |
+| **База даних** | [Turso DB](https://turso.tech/) (`@libsql/client`) | Хмарна розподілена SQLite база даних на Edge (AWS eu-west-1) |
+| **Скрейпінг OLX** | Headless Chrome + [Cheerio](https://cheerio.js.org/) | Обхід Cloudflare, повноцінний рендеринг DOM та вилучення даних |
+| **API DOM.RIA** | REST API (`node-fetch`) | Офіційна інтеграція з порталом нерухомості DOM.RIA |
+| **Гео-карти** | [Leaflet.js](https://leafletjs.com/) + `leaflet.markercluster` | Інтерактивна карта України з кластеризацією тисяч маркерів |
+| **Стилізація** | Vanilla CSS (Glassmorphism) | Адаптивний інтерфейс з темною темою та ефектами розмиття фону |
+| **Іконки** | [Lucide React](https://lucide.dev/) | Сучасні векторні іконки |
 
 ---
 
-## 🔬 Key Architectural Highlights
-
-### 1. Unified Real Estate Sync Engine (`/api/sync`)
-* **OLX Smart Scraper**: Bypasses basic limits by intelligently parsing the DOM, extracting high-resolution images via Apollo CDN regex mapping, and navigating automatically with built-in anti-ban delays.
-* **DOM.RIA Integration**: Connects via official API. Bypasses pagination limits to pull the entire housing market into the local SQLite database. Correctly maps high-quality `.webp` images directly from the RIA CDN.
-* **Upsert Logic**: Utilizes SQLite `ON CONFLICT(external_id) DO UPDATE` to ensure duplicate listings are never created, while keeping prices and descriptions up to date.
-
-### 2. Interactive Map Clustering (`MapView.tsx`)
-* **Leaflet MarkerCluster**: Handles thousands of property markers on the map without performance degradation.
-* **Dynamic Status Colors**: Markers dynamically change colors based on their CRM status (e.g., Orange for "Favorite", Green for "Viewing").
-* **Geo-coordinate Mapping**: Automatically maps listings to coordinates or snaps them to the nearest major Ukrainian city based on region parsing.
-
-### 3. Built-in Personal CRM (`/api/houses/[id]/status`)
-* **Relational Tracking**: A separate `house_crm` table allows storing personal statuses (`new`, `favorite`, `call`, `viewing`, `archived`) and custom text notes for each property.
-* **Instant UI Feedback**: Updating a status instantly reflects on the map marker and the sidebar card without page reloads.
-
----
-
-## 📁 Directory Structure
+## 📁 Структура проекту
 
 ```text
-FindHome/
-├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── houses/route.ts          # Core API: Dynamic SQL filtering (Price, Region, Status)
-│   │   │   ├── houses/[id]/status/      # CRM API: Update property statuses and notes
-│   │   │   └── sync/route.ts            # Sync API: Triggers background OLX/DOM.RIA scraping
-│   │   ├── globals.css                  # Glassmorphism design system & component styles
-│   │   ├── layout.tsx                   # Root layout, metadata definitions
-│   │   └── page.tsx                     # Main dashboard orchestration (Filters, Map, Sidebar)
-│   ├── components/
-│   │   ├── FilterPanel.tsx              # Top navigation, sync controls, and global filters
-│   │   ├── Sidebar.tsx                  # Scrollable list of property cards with CRM tools
-│   │   └── MapView.tsx                  # Leaflet map with dynamic marker clustering
-│   └── lib/
-│       ├── db.ts                        # SQLite database initialization and schema definitions
-│       ├── domria.ts                    # DOM.RIA REST API fetcher & pagination logic
-│       ├── olx.ts                       # Cheerio-based OLX HTML scraper
-│       ├── geo.ts                       # Ukrainian regions boundary & coordinates dictionary
-│       └── types.ts                     # TypeScript data interfaces
-├── findhome.db                          # Auto-generated SQLite database (Ignored in Git)
-└── next.config.ts                       # Next.js configuration and allowed Image CDNs (OLX, RIA)
+Find Home/
+├── find-home-app/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── api/
+│   │   │   │   ├── houses/route.ts       # Отримання та видалення будинків з фільтрами
+│   │   │   │   ├── houses/[id]/notes/    # Оновлення нотаток до будинку
+│   │   │   │   ├── houses/[id]/status/   # Оновлення CRM-статусу
+│   │   │   │   ├── seed/route.ts         # Миттєве відновлення перевіреної бази
+│   │   │   │   └── sync/route.ts         # Посторінкова синхронізація (OLX / DOM.RIA)
+│   │   │   ├── globals.css               # Дизайн-система (Glassmorphism, адаптивність)
+│   │   │   ├── layout.tsx                # Головний лейаут, мета-теги, SEO
+│   │   │   └── page.tsx                  # Головна сторінка (управління станом, карта, сайдбар)
+│   │   ├── components/
+│   │   │   ├── FilterPanel.tsx           # Верхня панель фільтрів, перемикач Купівля/Оренда, синхронізація
+│   │   │   ├── HouseCard.tsx             # Картка будинку в сайдбарі (фото, ціна, CRM, нотатки)
+│   │   │   ├── MapView.tsx               # Карта Leaflet з кластерами та спливаючими попапами
+│   │   │   └── Sidebar.tsx               # Бічна колонка зі списком оголошень та сортуванням
+│   │   └── lib/
+│   │       ├── db.ts                     # Підключення до Turso DB та автостворення схеми таблиць
+│   │       ├── domria.ts                 # Модуль скрейпінгу та роботи з DOM.RIA API
+│   │       ├── geo.ts                    # База координат міст, областей України та розрахунок відстаней
+│   │       ├── olx.ts                    # Headless Chrome + Cheerio скрейпер для OLX з класифікатором
+│   │       ├── seed.ts                   # Генератор перевірених будинків по всіх областях
+│   │       └── types.ts                  # Інтерфейси TypeScript
+│   ├── .env.local                        # Змінні середовища (Turso, API ключі)
+│   ├── next.config.ts                    # Конфігурація Next.js та дозволені домени зображень
+│   └── package.json
+└── README.md
 ```
 
 ---
 
-## 🚀 Quick Start
+## ⚡ Швидкий старт (Локальний запуск)
 
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
+### 1. Клонування репозиторію та встановлення залежностей
+```bash
+cd "find-home-app"
+npm install
+```
 
-2. **Setup Environment Variables**:
-   Create a `.env.local` file at the root of the project:
-   ```env
-   DOMRIA_API_KEY=your_domria_api_key_here
-   ```
+### 2. Налаштування змінних середовища (`.env.local`)
+Створіть файл `find-home-app/.env.local`:
+```env
+# DOM.RIA API Key (опціонально для DOM.RIA)
+DOMRIA_API_KEY=your_domria_api_key
 
-3. **Run Development Server**:
-   ```bash
-   npm run dev
-   ```
-   Open [http://localhost:3000](http://localhost:3000) (or `http://localhost:3001` depending on your environment) in your browser.
+# Turso Cloud Database (або залиште порожнім для локальної SQLite findhome.db)
+TURSO_DATABASE_URL="libsql://findhome-db-vercel-icfg-bngj7k8a0mbjgqbhbqjhml1w.aws-eu-west-1.turso.io"
+TURSO_AUTH_TOKEN="your_turso_auth_token"
+```
 
-4. **Sync Data**:
-   Click the **OLX** or **DOM.RIA** button in the top filter panel to begin scraping real estate listings into your local database. The terminal console will display real-time progress.
+### 3. Запуск сервера розробки
+```bash
+npm run dev
+```
+Відкрийте у браузері: [http://localhost:3000](http://localhost:3000)
 
 ---
-*Developed for automated and efficient private real estate search in Ukraine.*
+
+## ☁️ Деплой на Vercel
+
+Проект повністю оптимізований для розгортання на [Vercel](https://vercel.com/):
+
+1. Зробіть `git push` вашого репозиторію на GitHub / GitLab.
+2. Імпортуйте проект у Vercel.
+3. У розділі **Settings → Environment Variables** додайте:
+   * `TURSO_DATABASE_URL`
+   * `TURSO_AUTH_TOKEN`
+   * `DOMRIA_API_KEY`
+4. Натисніть **Deploy**.
+
+---
+
+## 📝 Ліцензія
+Проект розроблено для автоматизованого, якісного та швидкого пошуку приватних будинків в Україні.

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { HouseWithCRM, CRMStatus } from '@/lib/types';
 import { CRM_STATUSES } from '@/lib/types';
-import { MapPin, StickyNote, ExternalLink } from 'lucide-react';
+import { MapPin, StickyNote, ExternalLink, Home } from 'lucide-react';
 
 /**
  * Props for the HouseCard component.
@@ -32,6 +32,7 @@ export default function HouseCard({
   const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState(house.crm_notes || '');
   const [notesSaved, setNotesSaved] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -54,6 +55,11 @@ export default function HouseCard({
     setNotes(house.crm_notes || '');
   }, [house.crm_notes]);
 
+  // Reset img error if photo_url changes
+  useEffect(() => {
+    setImgError(false);
+  }, [house.photo_url]);
+
   /**
    * Debounces the notes change event to avoid saving on every keystroke.
    */
@@ -71,14 +77,39 @@ export default function HouseCard({
     ? `${house.distance_to_city < 1 ? '< 1' : house.distance_to_city < 10 ? house.distance_to_city.toFixed(1) : Math.round(house.distance_to_city)} км до ${house.nearest_city}`
     : '';
 
+  const isRent = house.deal_type === 'rent';
+  const rawPrice = isRent
+    ? (house.price_uah || (house.price ? Math.round(house.price * 41.5) : 0))
+    : (house.price || (house.price_uah ? Math.round(house.price_uah / 41.5) : 0));
+  const numericPrice = typeof rawPrice === 'number' ? rawPrice : parseFloat(String(rawPrice).replace(/\s+/g, '')) || 0;
+
+  const formattedPrice = isRent
+    ? `₴${numericPrice.toLocaleString()}/міс`
+    : `$${numericPrice.toLocaleString()}`;
+
+  const hasValidPhoto = Boolean(
+    house.photo_url &&
+    !imgError &&
+    house.photo_url.startsWith('http') &&
+    !house.photo_url.includes('no_thumbnail')
+  );
+
   return (
     <div className={`house-card ${isActive ? 'active' : ''}`}>
       {/* Image */}
       <div className="house-card-image" onClick={onClick}>
-        {house.photo_url ? (
-          <img src={house.photo_url} alt={house.title || 'Будинок'} loading="lazy" />
+        {hasValidPhoto ? (
+          <img
+            src={house.photo_url!}
+            alt={house.title || 'Будинок'}
+            loading="lazy"
+            onError={() => setImgError(true)}
+          />
         ) : (
-          <div className="no-photo">Немає фото</div>
+          <div className="no-photo">
+            <Home size={22} className="no-photo-icon" />
+            <span>Немає фото</span>
+          </div>
         )}
       </div>
 
@@ -86,7 +117,7 @@ export default function HouseCard({
       <div className="house-card-body" onClick={onClick}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <span className="house-card-price">
-            ${house.price.toLocaleString()}{house.deal_type === 'rent' ? '/міс' : ''}
+            {formattedPrice}
           </span>
 
           {/* Status selector */}

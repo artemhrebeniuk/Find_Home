@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { REGIONS } from '@/lib/geo';
 import type { CRMStatus } from '@/lib/types';
 import { CRM_STATUSES } from '@/lib/types';
-import { DownloadCloud, RefreshCw, Loader2, Trash2, AlertTriangle } from 'lucide-react';
+import { DownloadCloud, RefreshCw, Loader2, Trash2, AlertTriangle, Database } from 'lucide-react';
 
 /**
  * Props for the FilterPanel component.
@@ -22,6 +22,7 @@ interface FilterPanelProps {
   onStatusToggle: (s: CRMStatus) => void;
   onSync: (source: 'olx' | 'domria') => void;
   onClear: () => void;
+  onRestore: () => void;
 }
 
 /**
@@ -44,6 +45,7 @@ export default function FilterPanel({
   onStatusToggle,
   onSync,
   onClear,
+  onRestore,
 }: FilterPanelProps) {
   const [confirmClear, setConfirmClear] = useState(false);
 
@@ -98,25 +100,27 @@ export default function FilterPanel({
 
       {/* Price Range */}
       <div className="filter-group">
-        <span className="filter-label">Ціна $</span>
+        <span className="filter-label">
+          {dealType === 'rent' ? 'Ціна ₴/міс' : 'Ціна $'}
+        </span>
         <input
           className="input-control"
           type="number"
-          placeholder="Від"
+          placeholder={dealType === 'rent' ? 'Від ₴' : 'Від $'}
           value={priceMin}
           onChange={(e) => onPriceMinChange(e.target.value)}
           min={0}
-          step={1000}
+          step={dealType === 'rent' ? 500 : 1000}
         />
         <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>
         <input
           className="input-control"
           type="number"
-          placeholder="До"
+          placeholder={dealType === 'rent' ? 'До ₴' : 'До $'}
           value={priceMax}
           onChange={(e) => onPriceMaxChange(e.target.value)}
           min={0}
-          step={1000}
+          step={dealType === 'rent' ? 500 : 1000}
         />
       </div>
 
@@ -149,28 +153,38 @@ export default function FilterPanel({
         <button
           className={`sync-btn olx ${syncing === 'olx' ? 'syncing' : ''}`}
           onClick={() => onSync('olx')}
-          disabled={syncing !== null}
-          title="Зібрати всі оголошення з OLX (до 50 сторінок)"
+          disabled={syncing !== null && syncing !== 'olx'}
+          title={syncing === 'olx' ? 'Натисніть, щоб зупинити збір' : 'Зібрати всі оголошення з OLX'}
         >
           {syncing === 'olx' ? (
             <Loader2 size={16} className="spin-icon" />
           ) : (
             <DownloadCloud size={16} />
           )}
-          {syncing === 'olx' ? 'Збираємо...' : 'OLX'}
+          {syncing === 'olx' ? 'Зупинити' : 'OLX'}
         </button>
         <button
           className={`sync-btn domria ${syncing === 'domria' ? 'syncing' : ''}`}
           onClick={() => onSync('domria')}
-          disabled={syncing !== null}
-          title="Синхронізувати з DOM.RIA (потребує API ключ)"
+          disabled={syncing !== null && syncing !== 'domria'}
+          title={syncing === 'domria' ? 'Натисніть, щоб зупинити збір' : 'Синхронізувати з DOM.RIA'}
         >
           {syncing === 'domria' ? (
             <Loader2 size={16} className="spin-icon" />
           ) : (
             <RefreshCw size={16} />
           )}
-          {syncing === 'domria' ? 'Збираємо...' : 'DOM.RIA'}
+          {syncing === 'domria' ? 'Зупинити' : 'DOM.RIA'}
+        </button>
+        <button
+          type="button"
+          className="sync-btn"
+          style={{ color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.1)' }}
+          onClick={onRestore}
+          title="Відновити перевірену базу будинків (покупка та оренда по всій Україні)"
+        >
+          <Database size={15} />
+          Відновити базу
         </button>
         <button
           type="button"

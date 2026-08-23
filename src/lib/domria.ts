@@ -36,11 +36,26 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
     console.log(`[DOM.RIA] Fetching search: page ${page}`);
     const searchRes = await fetch(searchUrl);
     if (!searchRes.ok) {
+      if (searchRes.status === 429) {
+        return {
+          success: false,
+          count: 0,
+          message: 'DOM.RIA: Досягнуто погодинного ліміту API ключа (HourOverlimit). Спробуйте пізніше або скористайтеся кнопкою «Відновити базу».',
+        };
+      }
       throw new Error(`DOM.RIA search failed: ${searchRes.status}`);
     }
 
     const searchData = await searchRes.json();
-    const itemIds = searchData.items || [];
+    if (searchData.error_type === 'HourOverlimit' || searchData.error) {
+      return {
+        success: false,
+        count: 0,
+        message: 'DOM.RIA: Досягнуто погодинного ліміту API ключа (HourOverlimit). Спробуйте пізніше або скористайтеся кнопкою «Відновити базу».',
+      };
+    }
+
+    const itemIds = (searchData.items || []).slice(0, 20); // Process up to 20 items per page to conserve API key limits
 
     if (itemIds.length === 0) {
       return { success: true, count: 0, message: 'Більше оголошень не знайдено' };
@@ -49,11 +64,19 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
     const parsedAds = [];
 
     let processedCount = 0;
-    // Process ALL items from the page (no artificial limit)
+    // Process items from the page
     for (const id of itemIds) {
       try {
         const infoUrl = `${BASE_URL}/info/${id}?api_key=${DOMRIA_API_KEY}`;
-        const infoRes = await fetch(infoUrl);
+        let infoRes = await fetch(infoUrl);
+
+        // Handle 429 rate limit with backoff
+        if (infoRes.status === 429) {
+          console.warn(`[DOM.RIA] Rate limit hit on ${id}, backing off for 2.5s...`);
+          await new Promise(resolve => setTimeout(resolve, 2500));
+          infoRes = await fetch(infoUrl);
+        }
+
         if (!infoRes.ok) {
           console.warn(`[DOM.RIA] Failed to fetch info for ${id}: ${infoRes.status}`);
           continue;
@@ -75,7 +98,7 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
         const photo_url = buildPhoto(ad.main_photo);
         const photos: string[] = [];
         if (ad.photos) {
-          for (const p of Object.values(ad.photos) as any[]) {
+          for (const p of Object.values(ad.photos) as { file?: string }[]) {
             if (p.file) {
               const url = buildPhoto(p.file);
               if (url) photos.push(url);
@@ -90,12 +113,22 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
 
         const nearest = findNearestCity(latitude, longitude);
 
-        // Price — preserve original price from listing
-        let price = ad.priceArr?.[1] || 0; // USD price usually at index 1
-        let price_uah = ad.priceArr?.[3] || 0; // UAH price usually at index 3
+        // Price — parse and normalize numeric values
+        const cleanNumber = (val: unknown): number => {
+          if (typeof val === 'number') return val;
+          if (!val) return 0;
+          const num = parseFloat(String(val).replace(/\s+/g, '').replace(/,/g, '.'));
+          return isNaN(num) ? 0 : num;
+        };
+
+        let price = cleanNumber(ad.priceArr?.[1]); // USD price usually at index 1
+        let price_uah = cleanNumber(ad.priceArr?.[3]); // UAH price usually at index 3
 
         if (!price && price_uah) {
           price = Math.round(price_uah / 41.5);
+        }
+        if (!price_uah && price) {
+          price_uah = Math.round(price * 41.5);
         }
 
         parsedAds.push({
@@ -130,8 +163,8 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
           console.log(`[DOM.RIA] Processed ${processedCount}/${itemIds.length} items on page ${page}...`);
         }
 
-        // Rate limit delay — DOM.RIA free tier is limited
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Rate limit delay — stable 800ms pacing for developer tier
+        await new Promise(resolve => setTimeout(resolve, 800));
       } catch (e) {
         console.error(`[DOM.RIA] Error parsing item ${id}:`, e);
       }
@@ -180,9 +213,10 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
     await tx.commit();
 
     return { success: true, count: insertedCount, totalAdsFound: parsedAds.length };
-  } catch (error: any) {
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown sync error';
     console.error('[DOM.RIA] Sync error:', error);
-    return { success: false, count: 0, message: error.message };
+    return { success: false, count: 0, message: msg };
   }
 }
 

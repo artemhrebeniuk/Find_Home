@@ -31,18 +31,22 @@ export async function GET(request: NextRequest) {
   const conditions: string[] = ['h.is_active = 1', 'h.deal_type = ?'];
   const params: (string | number)[] = [dealType];
 
+  // Determine price column based on deal type (UAH for rent, USD for sale)
+  const isRent = dealType === 'rent';
+  const priceCol = isRent ? "CAST(COALESCE(h.price_uah, h.price * 41.5) AS REAL)" : "CAST(h.price AS REAL)";
+
   if (region && region !== 'all') {
     conditions.push('h.region = ?');
     params.push(region);
   }
 
   if (priceMin) {
-    conditions.push('h.price >= ?');
+    conditions.push(`${priceCol} >= ?`);
     params.push(Number(priceMin));
   }
 
   if (priceMax) {
-    conditions.push('h.price <= ?');
+    conditions.push(`${priceCol} <= ?`);
     params.push(Number(priceMax));
   }
 
@@ -50,8 +54,12 @@ export async function GET(request: NextRequest) {
     const statusList = statuses.split(',').filter(Boolean);
     if (statusList.length > 0) {
       const placeholders = statusList.map(() => '?').join(',');
-      conditions.push(`(c.status IN (${placeholders}) OR (c.status IS NULL AND 'new' IN (${placeholders})))`);
-      params.push(...statusList, ...statusList);
+      if (statusList.includes('new')) {
+        conditions.push(`(c.status IN (${placeholders}) OR c.status IS NULL)`);
+      } else {
+        conditions.push(`c.status IN (${placeholders})`);
+      }
+      params.push(...statusList);
     }
   }
 
@@ -65,12 +73,12 @@ export async function GET(request: NextRequest) {
   }
 
   // Sort
-  let orderBy = 'h.price ASC';
+  let orderBy = `${priceCol} ASC`;
   switch (sort) {
-    case 'price_desc': orderBy = 'h.price DESC'; break;
+    case 'price_desc': orderBy = `${priceCol} DESC`; break;
     case 'distance': orderBy = 'h.distance_to_city ASC'; break;
     case 'date': orderBy = 'h.created_at DESC'; break;
-    default: orderBy = 'h.price ASC';
+    default: orderBy = `${priceCol} ASC`;
   }
 
   const whereClause = conditions.join(' AND ');

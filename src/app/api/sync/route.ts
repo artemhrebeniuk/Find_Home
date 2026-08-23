@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { syncOLX, syncOLXAllPages } from '@/lib/olx';
+import { syncOLX, syncOLXAllPages, syncOLXBothCategories } from '@/lib/olx';
 import { syncDomRia, syncDomRiaAllPages, isDomRiaConfigured } from '@/lib/domria';
 
 /**
@@ -12,6 +12,7 @@ import { syncDomRia, syncDomRiaAllPages, isDomRiaConfigured } from '@/lib/domria
  * - deal_type: 'sale' | 'rent' (The type of operation)
  * - page: number (Optional, specific page to scrape for pagination)
  * - mode: 'full' (Optional, if 'full' it scrapes all available pages up to MAX_PAGES)
+ *         For OLX in full mode, BOTH sale and rent are scraped for maximum coverage.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -22,14 +23,18 @@ export async function POST(request: NextRequest) {
 
     if (source === 'olx') {
       if (mode === 'full') {
-        // Full sync: scrape all available pages
-        const result = await syncOLXAllPages(dealType);
+        // Full sync: scrape BOTH sale and rent for maximum coverage
+        const result = await syncOLXBothCategories();
+        if (!result.success) {
+          return NextResponse.json({ error: result.message, success: false }, { status: 400 });
+        }
         return NextResponse.json({
           success: result.success,
           message: result.message,
-          inserted: result.totalInserted,
-          total_found: result.totalFound,
-          pages_scraped: result.pagesScraped,
+          sale: result.sale,
+          rent: result.rent,
+          inserted: result.sale.inserted + result.rent.inserted,
+          total_found: result.sale.found + result.rent.found,
         });
       } else {
         // Single page sync

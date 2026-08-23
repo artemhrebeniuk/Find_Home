@@ -123,8 +123,17 @@ export default function MapView({
   // Create popup content
   const createPopupContent = useCallback((house: HouseWithCRM): string => {
     const status = house.crm_status || 'new';
-    const statusLabel = STATUS_LABELS[status];
     const statusColor = STATUS_COLORS[status];
+
+    const isRent = house.deal_type === 'rent';
+    const rawPrice = isRent
+      ? (house.price_uah || (typeof house.price === 'number' ? Math.round(house.price * 41.5) : Math.round(parseFloat(String(house.price).replace(/\s+/g, '')) * 41.5)))
+      : (typeof house.price === 'number' ? house.price : parseFloat(String(house.price).replace(/\s+/g, '')) || 0);
+
+    const numericPrice = typeof rawPrice === 'number' && !isNaN(rawPrice) ? rawPrice : 0;
+    const formattedPopupPrice = isRent
+      ? `₴${numericPrice.toLocaleString()}/міс`
+      : `$${numericPrice.toLocaleString()}`;
 
     const specs = [];
     if (house.area_total) specs.push(`<div class="popup-spec"><span class="popup-spec-value">${house.area_total}</span><span class="popup-spec-label">м²</span></div>`);
@@ -145,7 +154,7 @@ export default function MapView({
       <div class="house-popup" data-house-id="${house.id}">
         ${photoHtml}
         <div class="popup-body">
-          <div class="popup-price">$${house.price.toLocaleString()}${house.deal_type === 'rent' ? '/міс' : ''}</div>
+          <div class="popup-price">${formattedPopupPrice}</div>
           <div class="popup-location">${house.address || house.city || ''}${distanceText ? ` · ${distanceText}` : ''}</div>
           ${specs.length > 0 ? `<div class="popup-specs">${specs.join('')}</div>` : ''}
           <div class="popup-actions">
@@ -182,8 +191,14 @@ export default function MapView({
 
     houses.forEach((house) => {
       const status = house.crm_status || 'new';
-      const priceText = formatPriceBubble(house.price, house.currency);
-      const suffix = house.deal_type === 'rent' ? '/м' : '';
+      const isRent = house.deal_type === 'rent';
+      const displayPrice = isRent
+        ? (house.price_uah || (typeof house.price === 'number' ? Math.round(house.price * 41.5) : Math.round(parseFloat(String(house.price).replace(/\s+/g, '')) * 41.5)))
+        : (typeof house.price === 'number' ? house.price : parseFloat(String(house.price).replace(/\s+/g, '')) || 0);
+
+      const priceCurrency = isRent ? 'UAH' : 'USD';
+      const priceText = formatPriceBubble(displayPrice, priceCurrency);
+      const suffix = isRent ? '/м' : '';
 
       const icon = L.divIcon({
         html: `<div class="price-bubble status-${status}">${priceText}${suffix}</div>`,
