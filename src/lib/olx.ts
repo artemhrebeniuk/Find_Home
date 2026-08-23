@@ -203,6 +203,9 @@ async function fetchOlxHtml(url: string): Promise<string> {
   // Fallback to fetch
   const response = await fetch(url, { headers: OLX_HEADERS });
   if (!response.ok) {
+    if (response.status === 403) {
+      throw new Error(`OLX: Доступ обмежено захистом Cloudflare (403). На серверах Vercel діє блокування дата-центрів. Скористайтеся кнопкою «Відновити базу» або запустіть синхронізацію локально на комп'ютері.`);
+    }
     throw new Error(`OLX fetch failed: ${response.status} ${response.statusText}`);
   }
   return response.text();

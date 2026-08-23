@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         const pageNum = page ? parseInt(page, 10) : 1;
         const result = await syncOLX(dealType, pageNum);
         if (!result.success) {
-          return NextResponse.json({ error: result.message }, { status: 500 });
+          return NextResponse.json({ success: false, error: result.message, total_found: 0, has_more: false }, { status: 200 });
         }
         return NextResponse.json({
           success: true,
