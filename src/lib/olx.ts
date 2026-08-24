@@ -46,6 +46,57 @@ interface ParsedOlxAd {
 }
 
 /**
+ * Sanitizes and cleans description text, converting HTML break tags to natural newlines,
+ * stripping any embedded CSS rules, Emotion/Styled-components styles, HTML tags, and technical noise.
+ */
+export function cleanDescription(raw: string | undefined | null): string {
+  if (!raw || typeof raw !== 'string') return '';
+  let text = raw;
+
+  // 1. Remove style and script blocks completely
+  text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ');
+  text = text.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ');
+  text = text.replace(/&lt;style[\s\S]*?&lt;\/style&gt;/gi, ' ');
+  text = text.replace(/&lt;script[\s\S]*?&lt;\/script&gt;/gi, ' ');
+
+  // 2. Convert all line break tags (both raw and HTML-encoded) to real newlines
+  text = text.replace(/<\s*br\s*\/?>/gi, '\n');
+  text = text.replace(/&lt;\s*br\s*\/?&gt;/gi, '\n');
+  text = text.replace(/<\s*\/?p\s*>/gi, '\n\n');
+  text = text.replace(/&lt;\s*\/?p\s*&gt;/gi, '\n\n');
+
+  // 3. Strip any remaining HTML tags (raw or encoded)
+  text = text.replace(/<[^>]+>/g, ' ');
+  text = text.replace(/&lt;[^&gt;]+&gt;/g, ' ');
+
+  // 4. Decode HTML entities
+  text = text
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
+
+  // 5. Catch any second-pass tags that appeared after entity decoding
+  text = text.replace(/<\s*br\s*\/?>/gi, '\n');
+  text = text.replace(/<[^>]+>/g, ' ');
+
+  // 6. Remove CSS class blocks and emotion styles
+  text = text.replace(/\.[a-zA-Z0-9_-]+\s*\{[^}]*\}/g, ' ');
+  text = text.replace(/@media[^{]+\{[^}]+\}/g, ' ');
+  text = text.replace(/\{[a-zA-Z0-9_:\s;(),#%.\/-]+\}/g, ' ');
+  text = text.replace(/\.css-[a-zA-Z0-9_-]+/g, ' ');
+  text = text.replace(/^[\s\r\n]*Опис[\s\r\n]*/i, '');
+
+  // 7. Format clean paragraphs and whitespace
+  text = text.replace(/[ \t]+/g, ' ');
+  text = text.replace(/\n\s*\n\s*\n+/g, '\n\n');
+  return text.trim();
+}
+
+/**
  * Optimizes an OLX photo URL for 800x600 resolution.
  */
 function optimizePhotoUrl(url: string | undefined | null): string | null {
@@ -140,26 +191,76 @@ function classifyAndValidateDealType(
   return requestedDealType;
 }
 
+import puppeteer, { Browser } from 'puppeteer-core';
+
+let browserInstance: Browser | null = null;
+
+async function getBrowser(): Promise<Browser> {
+  if (browserInstance && browserInstance.connected) {
+    return browserInstance;
+  }
+  try {
+    browserInstance = await puppeteer.launch({
+      executablePath: CHROME_PATH,
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-blink-features=AutomationControlled',
+        '--disable-gpu',
+        '--disable-dev-shm-usage',
+        '--window-size=1920,1080',
+      ],
+    });
+    return browserInstance;
+  } catch (err) {
+    console.error('[OLX] Failed to launch Puppeteer Chrome:', err);
+    throw err;
+  }
+}
+
 /**
- * Fetches HTML from OLX using Headless Chrome or fetch.
+ * Fetches HTML from OLX using Puppeteer with stealth headers and request interception
+ * to bypass CloudFront and load pages in ~1-3s without downloading media.
  */
 async function fetchOlxHtml(url: string): Promise<string> {
-  // Try Headless Chrome on Mac
   try {
-    const cmd = `"${CHROME_PATH}" --headless=new --disable-gpu --no-sandbox --window-size=1920,20000 --user-agent="${OLX_HEADERS['User-Agent']}" --dump-dom "${url}"`;
-    const { stdout } = await execPromise(cmd, { maxBuffer: 25 * 1024 * 1024 });
-    if (stdout && stdout.length > 5000) {
-      return stdout;
+    const browser = await getBrowser();
+    const page = await browser.newPage();
+    try {
+      await page.evaluateOnNewDocument(() => {
+        Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+      });
+
+      await page.setExtraHTTPHeaders({
+        'Accept-Language': 'uk-UA,uk;q=0.9,en-US;q=0.8,en;q=0.7',
+        'sec-ch-ua': '"Not(A:Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"macOS"',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-site': 'none',
+        'sec-fetch-user': '?1',
+        'upgrade-insecure-requests': '1',
+      });
+
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      const html = await page.content();
+      if (html && html.length > 5000) {
+        return html;
+      }
+    } finally {
+      await page.close().catch(() => {});
     }
-  } catch (e: unknown) {
-    console.warn('[OLX] Headless Chrome fetch fallback failed, trying direct fetch...', e);
+  } catch (err) {
+    console.warn('[OLX] Puppeteer browser fetch warning:', err);
   }
 
-  // Fallback to fetch
+  // Fallback to direct fetch
   const response = await fetch(url, { headers: OLX_HEADERS });
   if (!response.ok) {
     if (response.status === 403) {
-      throw new Error(`OLX: Доступ обмежено захистом Cloudflare (403). На серверах Vercel діє блокування дата-центрів. Скористайтеся кнопкою «Відновити базу» або запустіть синхронізацію локально на комп'ютері.`);
+      throw new Error(`OLX: Доступ обмежено захистом Cloudflare (403). Скористайтеся кнопкою «Відновити базу» або повторіть спробу.`);
     }
     throw new Error(`OLX fetch failed: ${response.status} ${response.statusText}`);
   }
@@ -394,6 +495,46 @@ async function parseOLXPage(dealType: 'sale' | 'rent', page: number): Promise<{
 }
 
 /**
+ * Asynchronously enriches a batch of parsed ads in the background with full photo galleries
+ * and full descriptions, updating SQLite records smoothly without holding up the sync HTTP response.
+ */
+function scheduleBackgroundPhotoEnrichment(ads: ParsedOlxAd[], concurrency = 3): void {
+  if (!ads || ads.length === 0) return;
+
+  // Run in asynchronous worker
+  (async () => {
+    console.log(`[OLX-PHOTOS-BG] 🖼️ Запуск фонового завантаження повних галерей для ${ads.length} об'єктів...`);
+    for (let i = 0; i < ads.length; i += concurrency) {
+      const chunk = ads.slice(i, i + concurrency);
+      await Promise.all(
+        chunk.map(async (ad) => {
+          if (!ad.source_url || !ad.source_url.startsWith('http')) return;
+          try {
+            const detail = await fetchListingDetail(ad.source_url);
+            if (detail.photos && detail.photos.length > 0) {
+              await db.execute({
+                sql: `
+                  UPDATE houses 
+                  SET photos = ?,
+                      photo_url = COALESCE(?, photo_url),
+                      description = CASE WHEN LENGTH(COALESCE(?, '')) > LENGTH(COALESCE(description, '')) THEN ? ELSE description END,
+                      updated_at = CURRENT_TIMESTAMP
+                  WHERE external_id = ?
+                `,
+                args: [JSON.stringify(detail.photos), detail.photos[0] || null, detail.description, detail.description, ad.external_id],
+              });
+            }
+          } catch {
+            // Keep preview photo
+          }
+        })
+      );
+    }
+    console.log(`[OLX-PHOTOS-BG] ✅ Фонове завантаження галерей для ${ads.length} об'єктів завершено!`);
+  })().catch((err) => console.error('[OLX-PHOTOS-BG] Error:', err));
+}
+
+/**
  * Inserts or updates a batch of parsed ads into the local SQLite database.
  */
 async function insertAds(ads: ParsedOlxAd[]): Promise<number> {
@@ -449,6 +590,9 @@ async function insertAds(ads: ParsedOlxAd[]): Promise<number> {
     }
   }
   await tx.commit();
+
+  // Schedule background full photo enrichment without blocking user response
+  scheduleBackgroundPhotoEnrichment(ads);
 
   return insertedCount;
 }
@@ -609,6 +753,7 @@ export async function fetchListingDetail(sourceUrl: string): Promise<{
     const html = await fetchOlxHtml(sourceUrl);
     const $ = cheerio.load(html);
     const photoSet = new Set<string>();
+    let extractedDescription = '';
 
     // 0. Parse window.__PRERENDERED_STATE__ for complete photo array
     const prerenderedMatch = html.match(/window\.__PRERENDERED_STATE__\s*=\s*("\{[\s\S]+?\}"|\{[\s\S]+?\});/);
@@ -629,6 +774,12 @@ export async function fetchListingDetail(sourceUrl: string): Promise<{
               const cleaned = rawLink.replace(/;s=\d+x\d+.*$/, '');
               photoSet.add(`${cleaned};s=1000x700`);
             }
+          }
+        }
+        if (adData?.description && typeof adData.description === 'string') {
+          const cleaned = cleanDescription(adData.description);
+          if (cleaned.length > 10) {
+            extractedDescription = cleaned;
           }
         }
       } catch (e) {
@@ -665,13 +816,18 @@ export async function fetchListingDetail(sourceUrl: string): Promise<{
       }
     });
 
-    // 3. Extract description text
-    const description = $('[data-cy="ad_description"]').text().trim() ||
-      $('div[data-cy="ad_description"] div').text().trim();
+    // 3. Extract description text if not found in state
+    if (!extractedDescription) {
+      // Remove all style, script, noscript, svg elements to prevent CSS code leaking into text
+      $('style, script, noscript, svg, link, meta, iframe').remove();
+      const domDesc = $('[data-cy="ad_description"]').text().trim() ||
+        $('div[data-cy="ad_description"]').text().trim();
+      extractedDescription = cleanDescription(domDesc);
+    }
 
     return {
       photos: Array.from(photoSet),
-      description,
+      description: extractedDescription,
     };
   } catch (error) {
     console.error(`[OLX-DETAIL] Error fetching detail for ${sourceUrl}:`, error);

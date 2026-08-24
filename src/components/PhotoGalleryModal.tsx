@@ -104,6 +104,23 @@ export default function PhotoGalleryModal({
     }
   }, [currentIndex]);
 
+  // Preload adjacent images in browser cache for instant 0ms transitions
+  useEffect(() => {
+    if (!isOpen || photos.length <= 1) return;
+    const indicesToPreload = [
+      (currentIndex + 1) % photos.length,
+      (currentIndex + 2) % photos.length,
+      (currentIndex - 1 + photos.length) % photos.length,
+    ];
+    indicesToPreload.forEach((idx) => {
+      const url = photos[idx];
+      if (url && typeof Image !== 'undefined') {
+        const img = new Image();
+        img.src = url;
+      }
+    });
+  }, [isOpen, currentIndex, photos]);
+
   const nextPhoto = useCallback(() => {
     if (photos.length <= 1) return;
     setIsLoaded(false);
@@ -185,12 +202,9 @@ export default function PhotoGalleryModal({
             {photos.length > 0 && (
               <div className="gallery-counter">
                 <ImageIcon size={14} />
-                <span>{currentIndex + 1} / {photos.length}</span>
-                {isLoadingMore && (
-                  <span style={{ fontSize: '0.75rem', color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}>
-                    • завантажуємо повну галерею...
-                  </span>
-                )}
+                <span>
+                  {currentIndex + 1} / {photos.length}
+                </span>
               </div>
             )}
             {house.source_url && (

@@ -61,119 +61,126 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
       return { success: true, count: 0, message: 'Більше оголошень не знайдено' };
     }
 
-    const parsedAds = [];
+    const parsedAds: any[] = [];
+    const CHUNK_SIZE = 4;
 
-    let processedCount = 0;
-    // Process items from the page
-    for (const id of itemIds) {
-      try {
-        const infoUrl = `${BASE_URL}/info/${id}?api_key=${DOMRIA_API_KEY}`;
-        let infoRes = await fetch(infoUrl);
+    // Process items in parallel chunks to dramatically speed up page processing (from 16s down to ~2s)
+    for (let i = 0; i < itemIds.length; i += CHUNK_SIZE) {
+      const chunk = itemIds.slice(i, i + CHUNK_SIZE);
+      const chunkResults = await Promise.all(
+        chunk.map(async (id: number) => {
+          try {
+            const infoUrl = `${BASE_URL}/info/${id}?api_key=${DOMRIA_API_KEY}`;
+            let infoRes = await fetch(infoUrl);
 
-        // Handle 429 rate limit with backoff
-        if (infoRes.status === 429) {
-          console.warn(`[DOM.RIA] Rate limit hit on ${id}, backing off for 2.5s...`);
-          await new Promise(resolve => setTimeout(resolve, 2500));
-          infoRes = await fetch(infoUrl);
-        }
-
-        if (!infoRes.ok) {
-          console.warn(`[DOM.RIA] Failed to fetch info for ${id}: ${infoRes.status}`);
-          continue;
-        }
-
-        const ad = await infoRes.json();
-
-        const external_id = `domria_${ad.realty_id}`;
-        const title = `Будинок, ${ad.total_square_meters || '?'} м²`;
-        const description = ad.description || '';
-        const source_url = `https://dom.ria.com/uk/${ad.beautiful_url}`;
-
-        const buildPhoto = (path: string | null) => {
-          if (!path) return null;
-          return `https://cdn.riastatic.com/photos/${path}`.replace(/\.(jpg|jpeg|png)$/i, 'b.webp');
-        };
-
-        // Photos — real photos from the listing
-        const photo_url = buildPhoto(ad.main_photo);
-        const photos: string[] = [];
-        if (ad.photos) {
-          for (const p of Object.values(ad.photos) as { file?: string }[]) {
-            if (p.file) {
-              const url = buildPhoto(p.file);
-              if (url) photos.push(url);
+            // Handle 429 rate limit with backoff
+            if (infoRes.status === 429) {
+              console.warn(`[DOM.RIA] Rate limit hit on ${id}, backing off for 2s...`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              infoRes = await fetch(infoUrl);
             }
+
+            if (!infoRes.ok) {
+              console.warn(`[DOM.RIA] Failed to fetch info for ${id}: ${infoRes.status}`);
+              return null;
+            }
+
+            const ad = await infoRes.json();
+
+            const external_id = `domria_${ad.realty_id}`;
+            const title = `Будинок, ${ad.total_square_meters || '?'} м²`;
+            const description = ad.description || '';
+            const source_url = `https://dom.ria.com/uk/${ad.beautiful_url}`;
+
+            const buildPhoto = (path: string | null) => {
+              if (!path) return null;
+              return `https://cdn.riastatic.com/photos/${path}`.replace(/\.(jpg|jpeg|png)$/i, 'b.webp');
+            };
+
+            // Photos — full high-res photo gallery
+            const photo_url = buildPhoto(ad.main_photo);
+            const photos: string[] = [];
+            if (ad.photos) {
+              for (const p of Object.values(ad.photos) as { file?: string }[]) {
+                if (p.file) {
+                  const url = buildPhoto(p.file);
+                  if (url) photos.push(url);
+                }
+              }
+            }
+
+            // Location
+            let latitude = ad.latitude || 0;
+            let longitude = ad.longitude || 0;
+            const rawRegion = ad.state_name || '';
+            let region = canonicalRegion(rawRegion) || rawRegion || 'Київська';
+            if (!latitude || !longitude) {
+              const resolved = resolveLocationCoords(ad.city_name || '', rawRegion);
+              latitude = resolved.lat;
+              longitude = resolved.lng;
+              region = resolved.region;
+            }
+
+            const nearest = findNearestCity(latitude, longitude);
+
+            // Price
+            const cleanNumber = (val: unknown): number => {
+              if (typeof val === 'number') return val;
+              if (!val) return 0;
+              const num = parseFloat(String(val).replace(/\s+/g, '').replace(/,/g, '.'));
+              return isNaN(num) ? 0 : num;
+            };
+
+            let price = cleanNumber(ad.priceArr?.[1]);
+            let price_uah = cleanNumber(ad.priceArr?.[3]);
+
+            if (!price && price_uah) {
+              price = Math.round(price_uah / 41.5);
+            }
+            if (!price_uah && price) {
+              price_uah = Math.round(price * 41.5);
+            }
+
+            return {
+              external_id,
+              source: 'domria',
+              deal_type: dealType,
+              title,
+              description,
+              price,
+              currency: 'USD',
+              price_uah,
+              latitude,
+              longitude,
+              region: region,
+              city: ad.city_name || nearest.city,
+              district: ad.district_name || null,
+              address: ad.street_name ? `${ad.street_name}, ${ad.city_name}` : nearest.city,
+              area_total: ad.total_square_meters || null,
+              area_land: ad.land_square_meters || null,
+              rooms: ad.rooms_count || null,
+              floors: ad.floors_count || null,
+              year_built: ad.building_year || null,
+              photo_url,
+              photos: JSON.stringify(photos.slice(0, 15)),
+              source_url,
+              nearest_city: nearest.city,
+              distance_to_city: nearest.distance,
+            };
+          } catch (e) {
+            console.error(`[DOM.RIA] Error parsing item ${id}:`, e);
+            return null;
           }
-        }
+        })
+      );
 
-        // Location — normalize Russian region names from DOM.RIA to canonical Ukrainian
-        let latitude = ad.latitude || 0;
-        let longitude = ad.longitude || 0;
-        const rawRegion = ad.state_name || '';
-        let region = canonicalRegion(rawRegion) || rawRegion || 'Київська';
-        if (!latitude || !longitude) {
-          const resolved = resolveLocationCoords(ad.city_name || '', rawRegion);
-          latitude = resolved.lat;
-          longitude = resolved.lng;
-          region = resolved.region;
-        }
+      for (const res of chunkResults) {
+        if (res) parsedAds.push(res);
+      }
 
-        const nearest = findNearestCity(latitude, longitude);
-
-        // Price — parse and normalize numeric values
-        const cleanNumber = (val: unknown): number => {
-          if (typeof val === 'number') return val;
-          if (!val) return 0;
-          const num = parseFloat(String(val).replace(/\s+/g, '').replace(/,/g, '.'));
-          return isNaN(num) ? 0 : num;
-        };
-
-        let price = cleanNumber(ad.priceArr?.[1]); // USD price usually at index 1
-        let price_uah = cleanNumber(ad.priceArr?.[3]); // UAH price usually at index 3
-
-        if (!price && price_uah) {
-          price = Math.round(price_uah / 41.5);
-        }
-        if (!price_uah && price) {
-          price_uah = Math.round(price * 41.5);
-        }
-
-        parsedAds.push({
-          external_id,
-          source: 'domria',
-          deal_type: dealType,
-          title,
-          description,
-          price,
-          currency: 'USD',
-          price_uah,
-          latitude,
-          longitude,
-          region: region,
-          city: ad.city_name || nearest.city,
-          district: ad.district_name || null,
-          address: ad.street_name ? `${ad.street_name}, ${ad.city_name}` : nearest.city,
-          area_total: ad.total_square_meters || null,
-          area_land: ad.land_square_meters || null,
-          rooms: ad.rooms_count || null,
-          floors: ad.floors_count || null,
-          year_built: ad.building_year || null,
-          photo_url,
-          photos: JSON.stringify(photos.slice(0, 10)),
-          source_url,
-          nearest_city: nearest.city,
-          distance_to_city: nearest.distance,
-        });
-
-        processedCount++;
-        if (processedCount % 10 === 0) {
-          console.log(`[DOM.RIA] Processed ${processedCount}/${itemIds.length} items on page ${page}...`);
-        }
-
-        // Rate limit delay — stable 800ms pacing for developer tier
-        await new Promise(resolve => setTimeout(resolve, 800));
-      } catch (e) {
-        console.error(`[DOM.RIA] Error parsing item ${id}:`, e);
+      // Small 250ms spacing between chunks to maintain healthy API throughput
+      if (i + CHUNK_SIZE < itemIds.length) {
+        await new Promise(resolve => setTimeout(resolve, 250));
       }
     }
 

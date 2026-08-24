@@ -92,6 +92,8 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  height: 100%;
+  height: 100dvh;
 }
 
 body {
@@ -100,7 +102,9 @@ body {
   color: var(--text-primary);
   line-height: 1.5;
   overflow: hidden;
-  height: 100vh;
+  height: 100%;
+  height: 100dvh;
+  min-height: -webkit-fill-available;
 }
 
 /* --- Typography --- */
@@ -128,7 +132,8 @@ a:hover {
 .app-layout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -1129,6 +1134,7 @@ a:hover {
     left: 0;
     width: 100%;
     height: 100%;
+    max-height: 100dvh;
     z-index: 200;
     transform: translateY(100%);
     transition: transform 0.3s var(--ease-spring);
@@ -1138,6 +1144,10 @@ a:hover {
 
   .sidebar.mobile-open {
     transform: translateY(0);
+  }
+
+  .sidebar-list {
+    padding-bottom: max(130px, calc(env(safe-area-inset-bottom, 0px) + 130px)) !important;
   }
 
   .filter-bar {
@@ -1174,35 +1184,39 @@ a:hover {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    position: absolute;
-    bottom: 24px;
+    position: fixed;
+    bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 16px));
     left: 50%;
     transform: translateX(-50%);
-    z-index: 150;
+    z-index: 9999;
     background: var(--bg-elevated);
     color: var(--text-primary);
-    border: 1px solid var(--border);
-    padding: 12px 24px;
+    border: 1px solid var(--border-hover);
+    padding: 10px 22px;
+    height: 46px;
+    min-width: 145px;
     border-radius: var(--radius-full);
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 600;
-    box-shadow: var(--shadow-lg), 0 0 20px rgba(0,0,0,0.5);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.12);
     cursor: pointer;
     transition: all 0.2s var(--ease-out);
     font-family: var(--font-body);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .mobile-fab:active {
     transform: translateX(-50%) scale(0.95);
   }
 
-  /* When sidebar is open, we need the button to be on top of the sidebar */
+  /* When sidebar is open, button switches to accent */
   .sidebar.mobile-open ~ .mobile-fab,
   .mobile-fab.fab-open {
-    z-index: 250;
     background: var(--accent);
     color: white;
     border-color: var(--accent);
+    box-shadow: 0 8px 24px rgba(108, 99, 255, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2);
   }
 }
 
@@ -1823,55 +1837,161 @@ a:hover {
 }
 
 /* ==========================================================================
-   MOBILE-SPECIFIC REFINEMENTS (iPhone 12/15 Pro, Xiaomi 10S, 360px-430px)
+   MOBILE-SPECIFIC REFINEMENTS (Redmi 10S, Redmi 10C, 360px-480px viewports)
    ========================================================================== */
 
 @media (max-width: 640px) {
-  .gallery-header {
-    padding: 12px 14px;
-  }
-  .gallery-price {
-    font-size: 1.15rem;
-  }
-  .gallery-location {
-    font-size: 0.76rem;
-    max-width: 170px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .gallery-counter {
-    padding: 4px 8px;
-    font-size: 0.72rem;
-  }
-  .gallery-btn-icon {
-    width: 36px;
-    height: 36px;
-  }
-  .gallery-nav-btn {
-    width: 40px;
-    height: 40px;
-  }
-  .gallery-nav-btn.prev {
-    left: 8px;
-  }
-  .gallery-nav-btn.next {
-    right: 8px;
-  }
-  .gallery-thumbnails {
-    padding: 10px 12px;
+  /* Header & Filter Bar */
+  .filter-bar {
+    padding: 6px 10px;
     gap: 6px;
   }
-  .gallery-thumb-item {
-    width: 54px;
-    height: 42px;
+
+  .toggle-option {
+    padding: 6px 12px;
+    font-size: 0.82rem;
   }
+
+  .select-control,
+  .input-control {
+    font-size: 0.82rem;
+    padding: 6px 8px;
+    min-height: 36px;
+  }
+
+  .crm-filter-pill {
+    padding: 4px 8px;
+    font-size: 0.74rem;
+    min-height: 32px;
+  }
+
+  .sync-btn {
+    padding: 6px 10px;
+    font-size: 0.76rem;
+    min-height: 36px;
+    gap: 4px;
+  }
+
+  /* Cards & Thumb Targets */
+  .house-card {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+
+  .house-card-image {
+    width: 96px;
+    height: 76px;
+  }
+
+  .house-card-price {
+    font-size: 1.05rem;
+  }
+
+  .house-card-location {
+    font-size: 0.74rem;
+  }
+
+  .house-card-specs {
+    font-size: 0.72rem;
+    gap: 8px;
+  }
+
+  .expand-btn {
+    padding: 8px 12px;
+    min-height: 38px;
+    font-size: 0.82rem;
+  }
+
   .drawer-specs-grid {
     grid-template-columns: 1fr 1fr;
     gap: 5px;
   }
+
   .drawer-actions {
+    display: flex;
     flex-direction: column;
     gap: 6px;
+    width: 100%;
+  }
+
+  .drawer-action-btn {
+    width: 100%;
+    min-height: 42px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    justify-content: center;
+  }
+
+  /* Fullscreen Gallery Modal */
+  .gallery-header {
+    padding: 10px 12px;
+  }
+
+  .gallery-price {
+    font-size: 1.1rem;
+  }
+
+  .gallery-location {
+    font-size: 0.74rem;
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gallery-counter {
+    padding: 3px 7px;
+    font-size: 0.7rem;
+  }
+
+  .gallery-btn-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .gallery-nav-btn {
+    width: 42px;
+    height: 42px;
+  }
+
+  .gallery-nav-btn.prev {
+    left: 6px;
+  }
+
+  .gallery-nav-btn.next {
+    right: 6px;
+  }
+
+  .gallery-thumbnails {
+    padding: 8px 10px;
+    gap: 5px;
+  }
+
+  .gallery-thumb-item {
+    width: 50px;
+    height: 38px;
+  }
+}
+
+/* Extra fine-tuning for ultra-narrow 360px devices (Redmi 10S / Redmi 10C) */
+@media (max-width: 380px) {
+  .house-card-image {
+    width: 86px;
+    height: 70px;
+  }
+
+  .house-card-price {
+    font-size: 0.98rem;
+  }
+
+  .house-card-location {
+    font-size: 0.72rem;
+  }
+
+  .mobile-fab {
+    padding: 9px 18px;
+    font-size: 0.84rem;
+    height: 42px;
+    min-width: 130px;
   }
 }

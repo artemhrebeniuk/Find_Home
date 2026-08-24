@@ -172,14 +172,14 @@ export default function HomePage() {
     setSyncing(source);
     const sourceName = source === 'olx' ? 'OLX' : 'DOM.RIA';
     const typeLabel = dealType === 'rent' ? 'Оренда' : 'Купівля';
-    const maxPages = source === 'olx' ? (dealType === 'rent' ? 20 : 28) : 10;
+    const maxPages = 100; // Unconstrained full sync up to 100 pages per category
 
     let accumulatedFound = 0;
     let accumulatedInserted = 0;
     let pagesCompleted = 0;
 
     try {
-      showToast('info', `Початок синхронізації ${sourceName} (${typeLabel})...`);
+      showToast('info', `Початок повної синхронізації ${sourceName} (${typeLabel})...`);
 
       for (let p = 1; p <= maxPages; p++) {
         if (abortSyncRef.current) {
@@ -187,7 +187,7 @@ export default function HomePage() {
           break;
         }
 
-        showToast('info', `Синхронізація ${sourceName} (${typeLabel}): стор. ${p}/${maxPages}... (зібрано ${accumulatedInserted})`);
+        showToast('info', `Синхронізація ${sourceName} (${typeLabel}): стор. ${p}... (додано ${accumulatedInserted} будинків)`);
 
         const res = await fetch('/api/sync', {
           method: 'POST',

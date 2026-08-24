@@ -310,7 +310,26 @@ function HouseCardComponent({
         <div className="card-expanded-drawer" onClick={(e) => e.stopPropagation()}>
           {/* Description Text */}
           <div className="drawer-description">
-            <p>{house.description || house.title || 'Опис об\'єкта відсутній.'}</p>
+            <p>
+              {(house.description || house.title || 'Опис об\'єкта відсутній.')
+                .replace(/<\s*br\s*\/?>/gi, '\n')
+                .replace(/&lt;\s*br\s*\/?&gt;/gi, '\n')
+                .replace(/<\s*\/?p\s*>/gi, '\n\n')
+                .replace(/&lt;\s*\/?p\s*&gt;/gi, '\n\n')
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/&lt;[^&gt;]+&gt;/g, ' ')
+                .replace(/&nbsp;/gi, ' ')
+                .replace(/&amp;/gi, '&')
+                .replace(/&quot;/gi, '"')
+                .replace(/&#39;/gi, "'")
+                .replace(/\.[a-zA-Z0-9_-]+\s*\{[^}]*\}/g, ' ')
+                .replace(/\{[a-zA-Z0-9_:\s;(),#%.\/-]+\}/g, ' ')
+                .replace(/\.css-[a-zA-Z0-9_-]+/g, ' ')
+                .replace(/^[\s\r\n]*Опис[\s\r\n]*/i, '')
+                .replace(/[ \t]+/g, ' ')
+                .replace(/\n\s*\n\s*\n+/g, '\n\n')
+                .trim() || house.title || 'Опис об\'єкта відсутній.'}
+            </p>
           </div>
 
           {/* Specs Grid */}
@@ -362,7 +381,7 @@ function HouseCardComponent({
                 onClick={() => onOpenGallery?.(house, 0)}
               >
                 <ImageIcon size={15} />
-                <span>{isFetchingPhotos ? 'Завантаження фото...' : `Фотографії (${photoCount})`}</span>
+                <span>{photoCount > 1 ? `Фотографії (${photoCount})` : 'Переглянути фото'}</span>
               </button>
             )}
             {house.source_url && (

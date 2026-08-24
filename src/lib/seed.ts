@@ -37,13 +37,63 @@ const REGIONS_DATA: RegionSeed[] = [
   { region: 'Чернівецька', city: 'Чернівці', lat: 48.2920, lng: 25.9358, center: 'Чернівці' },
 ];
 
-const REAL_PHOTOS = [
-  'https://cdn.riastatic.com/photosnew/dom/photo/prodazha-dom-kiev-svyatoshinskiy-svyatoshino__303649564b.webp',
-  'https://cdn.riastatic.com/photosnew/dom/photo/prodazha-dom-kiev-obolonskiy-obolon__303649565b.webp',
-  'https://cdn.riastatic.com/photosnew/dom/photo/prodazha-dom-kiev-goloseevskiy-teremki-1__303649566b.webp',
-  'https://cdn.riastatic.com/photosnew/dom/photo/prodazha-dom-kiev-darnitskiy-osokorki__303649567b.webp',
-  'https://cdn.riastatic.com/photosnew/dom/photo/prodazha-dom-kiev-solomenskiy-zhulyany__303649568b.webp',
-  'https://cdn.riastatic.com/photosnew/dom/photo/prodazha-dom-kiev-dneprovskiy-rusanovskie-sady__303649569b.webp',
+const REAL_PHOTO_GALLERIES: string[][] = [
+  [
+    'https://cdn.riastatic.com/photosnew/dom/photo/prodazha-dom-kiev-svyatoshinskiy-svyatoshino__303649564b.webp',
+    'https://cdn.riastatic.com/photosnew/dom/photo/prodazha-dom-kiev-obolonskiy-obolon__303649565b.webp',
+    'https://cdn.riastatic.com/photosnew/dom/photo/prodazha-dom-kiev-goloseevskiy-teremki-1__303649566b.webp',
+    'https://cdn.riastatic.com/photosnew/dom/photo/prodazha-dom-kiev-darnitskiy-osokorki__303649567b.webp',
+    'https://cdn.riastatic.com/photosnew/dom/photo/prodazha-dom-kiev-solomenskiy-zhulyany__303649568b.webp',
+    'https://cdn.riastatic.com/photosnew/dom/photo/prodazha-dom-kiev-dneprovskiy-rusanovskie-sady__303649569b.webp',
+  ],
+  [
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400646/340064636/340064636.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400646/340064640/340064640.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400646/340064642/340064642.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400646/340064645/340064645.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400646/340064648/340064648.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400646/340064652/340064652.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400646/340064655/340064655.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400646/340064657/340064657.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400646/340064660/340064660.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400646/340064663/340064663.jpg'
+  ],
+  [
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400644/340064431/340064431.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400644/340064435/340064435.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400644/340064440/340064440.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400644/340064444/340064444.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400644/340064447/340064447.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400644/340064450/340064450.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400644/340064453/340064453.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400644/340064457/340064457.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400644/340064461/340064461.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400644/340064464/340064464.jpg'
+  ],
+  [
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064148/340064148.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064155/340064155.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064162/340064162.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064168/340064168.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064174/340064174.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064182/340064182.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064186/340064186.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064193/340064193.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400642/340064201/340064201.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400642/340064207/340064207.jpg'
+  ],
+  [
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064141/340064141.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064144/340064144.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064150/340064150.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064157/340064157.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064163/340064163.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064169/340064169.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064175/340064175.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064181/340064181.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064187/340064187.jpg',
+    'https://cdn.riastatic.com/photosnew/dom/photo/34006/3400641/340064198/340064198.jpg'
+  ]
 ];
 
 const DESCRIPTIONS = [
@@ -88,7 +138,7 @@ export async function seedDatabase(): Promise<{ sales: number; rent: number; tot
 
   const tx = await db.transaction('write');
 
-  // Generate 80 sales across regions
+  // Generate 80 sales across regions with full multi-photo galleries
   for (let i = 0; i < 80; i++) {
     const loc = REGIONS_DATA[i % REGIONS_DATA.length];
     const offsetLat = Math.sin(i * 1.7) * 0.08;
@@ -102,7 +152,8 @@ export async function seedDatabase(): Promise<{ sales: number; rent: number; tot
     const year = 2018 + (i % 7);
     const priceUsd = 45000 + ((i * 13500) % 350000);
     const priceUah = Math.round(priceUsd * 41.5);
-    const photo = REAL_PHOTOS[i % REAL_PHOTOS.length];
+    const gallery = REAL_PHOTO_GALLERIES[i % REAL_PHOTO_GALLERIES.length];
+    const photo = gallery[0];
     const desc = DESCRIPTIONS[i % DESCRIPTIONS.length];
     const extId = `seed_sale_${i + 1}`;
     const title = `Будинок ${area} м², ділянка ${land} сот.`;
@@ -114,13 +165,13 @@ export async function seedDatabase(): Promise<{ sales: number; rent: number; tot
         extId, 'domria', 'sale', title, desc, priceUsd, priceUah,
         lat, lng, loc.region, loc.city, null, address,
         area, land, rooms, floors, year,
-        photo, JSON.stringify([photo]), 'https://dom.ria.com/uk/', loc.center, Math.round(Math.abs(offsetLat * 111))
+        photo, JSON.stringify(gallery), 'https://dom.ria.com/uk/', loc.center, Math.round(Math.abs(offsetLat * 111))
       ]
     });
     saleCount++;
   }
 
-  // Generate 50 rentals across regions
+  // Generate 50 rentals across regions with full multi-photo galleries
   for (let i = 0; i < 50; i++) {
     const loc = REGIONS_DATA[i % REGIONS_DATA.length];
     const offsetLat = Math.cos(i * 1.5) * 0.06;
@@ -134,7 +185,8 @@ export async function seedDatabase(): Promise<{ sales: number; rent: number; tot
     const year = 2019 + (i % 6);
     const priceUah = 18000 + ((i * 4500) % 95000);
     const priceUsd = Math.round(priceUah / 41.5);
-    const photo = REAL_PHOTOS[(i + 3) % REAL_PHOTOS.length];
+    const gallery = REAL_PHOTO_GALLERIES[(i + 2) % REAL_PHOTO_GALLERIES.length];
+    const photo = gallery[0];
     const desc = DESCRIPTIONS[(i + 2) % DESCRIPTIONS.length];
     const extId = `seed_rent_${i + 1}`;
     const title = `Оренда будинку ${area} м², ${rooms} кімн.`;
@@ -146,7 +198,7 @@ export async function seedDatabase(): Promise<{ sales: number; rent: number; tot
         extId, 'domria', 'rent', title, desc, priceUsd, priceUah,
         lat, lng, loc.region, loc.city, null, address,
         area, land, rooms, floors, year,
-        photo, JSON.stringify([photo]), 'https://dom.ria.com/uk/', loc.center, Math.round(Math.abs(offsetLat * 111))
+        photo, JSON.stringify(gallery), 'https://dom.ria.com/uk/', loc.center, Math.round(Math.abs(offsetLat * 111))
       ]
     });
     rentCount++;
