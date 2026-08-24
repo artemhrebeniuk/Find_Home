@@ -1,5 +1,5 @@
 import db, { setupDb } from './db';
-import { findNearestCity, MAJOR_CITIES, REGIONS } from './geo';
+import { findNearestCity, resolveLocationCoords, canonicalRegion, normalizeSettlementName, MAJOR_CITIES, REGIONS } from './geo';
 import * as cheerio from 'cheerio';
 import { exec } from 'child_process';
 import util from 'util';
@@ -141,51 +141,6 @@ function classifyAndValidateDealType(
 }
 
 /**
- * Resolves approximate geographical coordinates for a city or region name.
- */
-function resolveLocationCoords(city: string, regionName?: string): { lat: number; lng: number; region: string } {
-  const cleanCity = city.trim().toLowerCase();
-  const matchedCity = MAJOR_CITIES.find(
-    c => c.name.toLowerCase() === cleanCity || cleanCity.includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(cleanCity)
-  );
-  if (matchedCity) {
-    const r = REGIONS.find(reg => reg.id === matchedCity.region_id);
-    // Add micro-jitter so multiple ads in the same city don't overlap on exact same pixel
-    const jitterLat = (Math.random() - 0.5) * 0.04;
-    const jitterLng = (Math.random() - 0.5) * 0.04;
-    return {
-      lat: matchedCity.lat + jitterLat,
-      lng: matchedCity.lng + jitterLng,
-      region: r ? r.name : 'Київська',
-    };
-  }
-
-  // Check regions
-  if (regionName) {
-    const matchedRegion = REGIONS.find(
-      r => r.name.toLowerCase().includes(regionName.toLowerCase()) || regionName.toLowerCase().includes(r.name.toLowerCase())
-    );
-    if (matchedRegion) {
-      const jitterLat = (Math.random() - 0.5) * 0.06;
-      const jitterLng = (Math.random() - 0.5) * 0.06;
-      return {
-        lat: matchedRegion.lat + jitterLat,
-        lng: matchedRegion.lng + jitterLng,
-        region: matchedRegion.name,
-      };
-    }
-  }
-
-  // Default to Kyiv region
-  const defaultRegion = REGIONS[7]; // Kyiv
-  return {
-    lat: defaultRegion.lat + (Math.random() - 0.5) * 0.05,
-    lng: defaultRegion.lng + (Math.random() - 0.5) * 0.05,
-    region: 'Київська',
-  };
-}
-
-/**
  * Fetches HTML from OLX using Headless Chrome or fetch.
  */
 async function fetchOlxHtml(url: string): Promise<string> {
@@ -269,11 +224,12 @@ async function parseOLXPage(dealType: 'sale' | 'rent', page: number): Promise<{
 
         let latitude = ad.map?.lat || 0;
         let longitude = ad.map?.lon || 0;
-        let city = ad.location?.cityName || 'Київ';
-        let region = ad.location?.regionName || 'Київська';
+        let city = normalizeSettlementName(ad.location?.cityName || 'Київ');
+        const rawRegion = ad.location?.regionName || 'Київська';
+        let region = canonicalRegion(rawRegion) || rawRegion;
 
         if (!latitude || !longitude) {
-          const resolved = resolveLocationCoords(city, region);
+          const resolved = resolveLocationCoords(city, rawRegion, title, source_url);
           latitude = resolved.lat;
           longitude = resolved.lng;
           region = resolved.region;
@@ -369,14 +325,16 @@ async function parseOLXPage(dealType: 'sale' | 'rent', page: number): Promise<{
         const external_id = idMatch ? `olx_${idMatch[1]}` : `olx_${Math.random().toString(36).substring(2, 9)}`;
 
         const locationParts = locationDate.split(' - ')[0].split(',').map(s => s.trim());
-        const city = locationParts[0] || 'Київ';
-        const district = locationParts[1] || null;
+        const rawCity = locationParts[0] || 'Київ';
+        const regionHint = locationParts.length > 1 ? locationParts[1] : undefined;
+        const district = locationParts.length > 2 ? locationParts[1] : null;
 
         const { price, price_uah, currency } = parsePriceString(priceText);
         const source_url = href ? (href.startsWith('http') ? href : `https://www.olx.ua${href}`) : null;
 
-        const resolved = resolveLocationCoords(city);
+        const resolved = resolveLocationCoords(rawCity, regionHint, title, source_url || undefined);
         const nearest = findNearestCity(resolved.lat, resolved.lng);
+        const city = normalizeSettlementName(rawCity);
 
         // Try extracting square meters or rooms from title
         let area_total: number | null = null;
@@ -461,6 +419,14 @@ async function insertAds(ads: ParsedOlxAd[]): Promise<number> {
       title = excluded.title,
       description = excluded.description,
       deal_type = excluded.deal_type,
+      latitude = excluded.latitude,
+      longitude = excluded.longitude,
+      region = excluded.region,
+      city = excluded.city,
+      district = excluded.district,
+      address = excluded.address,
+      nearest_city = excluded.nearest_city,
+      distance_to_city = excluded.distance_to_city,
       updated_at = CURRENT_TIMESTAMP
   `;
 
@@ -626,3 +592,90 @@ export async function syncOLXBothCategories(
     message,
   };
 }
+
+/**
+ * Fetches the full listing detail page to extract all high-resolution photos
+ * and full description text directly from the ad page.
+ */
+export async function fetchListingDetail(sourceUrl: string): Promise<{
+  photos: string[];
+  description: string;
+}> {
+  if (!sourceUrl || !sourceUrl.startsWith('http')) {
+    return { photos: [], description: '' };
+  }
+
+  try {
+    const html = await fetchOlxHtml(sourceUrl);
+    const $ = cheerio.load(html);
+    const photoSet = new Set<string>();
+
+    // 0. Parse window.__PRERENDERED_STATE__ for complete photo array
+    const prerenderedMatch = html.match(/window\.__PRERENDERED_STATE__\s*=\s*("\{[\s\S]+?\}"|\{[\s\S]+?\});/);
+    if (prerenderedMatch) {
+      try {
+        let stateJson = prerenderedMatch[1];
+        if (stateJson.startsWith('"')) {
+          stateJson = JSON.parse(stateJson);
+        }
+        const state = typeof stateJson === 'string' ? JSON.parse(stateJson) : stateJson;
+        const adData = state?.ad?.ad || state?.ad || state?.targeting?.ad;
+        if (adData?.photos && Array.isArray(adData.photos)) {
+          for (const photo of adData.photos) {
+            const rawLink = typeof photo === 'string'
+              ? photo
+              : (photo.link || photo.url || (photo.filename ? `https://ireland.apollo.olxcdn.com/v1/files/${photo.filename}/image` : null));
+            if (rawLink && typeof rawLink === 'string' && rawLink.startsWith('http')) {
+              const cleaned = rawLink.replace(/;s=\d+x\d+.*$/, '');
+              photoSet.add(`${cleaned};s=1000x700`);
+            }
+          }
+        }
+      } catch (e) {
+        // Ignore state parse error
+      }
+    }
+
+    // 1. Check JSON-LD / schema.org Product images
+    $('script[type="application/ld+json"]').each((_, el) => {
+      try {
+        const data = JSON.parse($(el).html() || '{}');
+        if (data.image) {
+          const imgs = Array.isArray(data.image) ? data.image : [data.image];
+          for (const img of imgs) {
+            if (typeof img === 'string' && img.startsWith('http')) {
+              const cleaned = img.replace(/;s=\d+x\d+.*$/, '');
+              photoSet.add(`${cleaned};s=1000x700`);
+            }
+          }
+        }
+      } catch {
+        // Ignore JSON-LD parse errors
+      }
+    });
+
+    // 2. Check <img> tags on page
+    $('img').each((_, el) => {
+      const src = $(el).attr('src') || $(el).attr('data-src');
+      if (src && (src.includes('apollo.olxcdn.com') || src.includes('olxcdn.com'))) {
+        if (!src.includes('avatar') && !src.includes('icon') && !src.includes('static') && !src.includes('logo')) {
+          const cleaned = src.replace(/;s=\d+x\d+.*$/, '');
+          photoSet.add(`${cleaned};s=1000x700`);
+        }
+      }
+    });
+
+    // 3. Extract description text
+    const description = $('[data-cy="ad_description"]').text().trim() ||
+      $('div[data-cy="ad_description"] div').text().trim();
+
+    return {
+      photos: Array.from(photoSet),
+      description,
+    };
+  } catch (error) {
+    console.error(`[OLX-DETAIL] Error fetching detail for ${sourceUrl}:`, error);
+    return { photos: [], description: '' };
+  }
+}
+

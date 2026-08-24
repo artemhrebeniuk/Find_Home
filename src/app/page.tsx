@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Star, Calendar, Home, CheckCircle2, AlertCircle, Info, X, Map as MapIcon, List as ListIcon } from 'lucide-react';
 import FilterPanel from '@/components/FilterPanel';
 import Sidebar from '@/components/Sidebar';
+import PhotoGalleryModal from '@/components/PhotoGalleryModal';
 import type { HouseWithCRM, CRMStatus } from '@/lib/types';
 import { REGIONS } from '@/lib/geo';
 
@@ -41,6 +42,45 @@ export default function HomePage() {
   const [houses, setHouses] = useState<HouseWithCRM[]>([]);
   const [selectedHouseId, setSelectedHouseId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Gallery Modal state
+  const [galleryHouse, setGalleryHouse] = useState<HouseWithCRM | null>(null);
+  const [galleryIndex, setGalleryIndex] = useState<number>(0);
+  const [isGalleryOpen, setIsGalleryOpen] = useState<boolean>(false);
+
+  const handleOpenGallery = useCallback((house: HouseWithCRM, photoIndex: number = 0) => {
+    setGalleryHouse(house);
+    setGalleryIndex(photoIndex);
+    setIsGalleryOpen(true);
+  }, []);
+
+  const handlePhotosUpdated = useCallback((houseId: number, newPhotos: string[], newDescription?: string) => {
+    setHouses((prev) =>
+      prev.map((h) => {
+        if (h.id === houseId) {
+          const updated = {
+            ...h,
+            photos: JSON.stringify(newPhotos),
+            photo_url: newPhotos[0] || h.photo_url,
+            description: newDescription || h.description,
+          };
+          return updated;
+        }
+        return h;
+      })
+    );
+    setGalleryHouse((prev) => {
+      if (prev && prev.id === houseId) {
+        return {
+          ...prev,
+          photos: JSON.stringify(newPhotos),
+          photo_url: newPhotos[0] || prev.photo_url,
+          description: newDescription || prev.description,
+        };
+      }
+      return prev;
+    });
+  }, []);
 
   // Map state
   const [mapBounds, setMapBounds] = useState<{ sw: [number, number]; ne: [number, number] } | null>(null);
@@ -333,6 +373,8 @@ export default function HomePage() {
           onSortChange={setSort}
           onStatusChange={handleStatusChange}
           onNotesChange={handleNotesChange}
+          onOpenGallery={handleOpenGallery}
+          onPhotosUpdated={handlePhotosUpdated}
           mobileViewMode={mobileViewMode}
         />
         <MapView
@@ -341,6 +383,7 @@ export default function HomePage() {
           onHouseSelect={setSelectedHouseId}
           onStatusChange={handleStatusChange}
           onNotesChange={handleNotesChange}
+          onOpenGallery={handleOpenGallery}
           mapBounds={mapBounds}
         />
         
@@ -362,6 +405,15 @@ export default function HomePage() {
           )}
         </button>
       </div>
+
+      {/* Photo Gallery Modal */}
+      <PhotoGalleryModal
+        house={galleryHouse}
+        initialPhotoIndex={galleryIndex}
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+        onPhotosUpdated={handlePhotosUpdated}
+      />
 
       {/* Toast notifications */}
       <div className="toast-container">

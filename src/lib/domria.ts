@@ -1,5 +1,5 @@
 import db, { setupDb } from './db';
-import { findNearestCity } from './geo';
+import { findNearestCity, resolveLocationCoords, canonicalRegion } from './geo';
 
 const DOMRIA_API_KEY = process.env.DOMRIA_API_KEY;
 const BASE_URL = 'https://developers.ria.com/dom';
@@ -106,10 +106,17 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
           }
         }
 
-        // Location
-        const latitude = ad.latitude || 0;
-        const longitude = ad.longitude || 0;
-        if (!latitude || !longitude) continue;
+        // Location — normalize Russian region names from DOM.RIA to canonical Ukrainian
+        let latitude = ad.latitude || 0;
+        let longitude = ad.longitude || 0;
+        const rawRegion = ad.state_name || '';
+        let region = canonicalRegion(rawRegion) || rawRegion || 'Київська';
+        if (!latitude || !longitude) {
+          const resolved = resolveLocationCoords(ad.city_name || '', rawRegion);
+          latitude = resolved.lat;
+          longitude = resolved.lng;
+          region = resolved.region;
+        }
 
         const nearest = findNearestCity(latitude, longitude);
 
@@ -142,7 +149,7 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
           price_uah,
           latitude,
           longitude,
-          region: ad.state_name || nearest.city,
+          region: region,
           city: ad.city_name || nearest.city,
           district: ad.district_name || null,
           address: ad.street_name ? `${ad.street_name}, ${ad.city_name}` : nearest.city,
@@ -189,6 +196,14 @@ export async function syncDomRia(dealType: 'sale' | 'rent', page = 0) {
         photos = excluded.photos,
         title = excluded.title,
         description = excluded.description,
+        latitude = excluded.latitude,
+        longitude = excluded.longitude,
+        region = excluded.region,
+        city = excluded.city,
+        district = excluded.district,
+        address = excluded.address,
+        nearest_city = excluded.nearest_city,
+        distance_to_city = excluded.distance_to_city,
         updated_at = CURRENT_TIMESTAMP
     `;
 

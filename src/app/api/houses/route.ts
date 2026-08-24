@@ -108,16 +108,44 @@ export async function GET(request: NextRequest) {
 /**
  * DELETE /api/houses
  * 
- * Wipes the entire local real estate database (houses and their CRM records).
- * This is used for completely resetting the app data.
+ * Performs smart database cleanup.
+ * By default, preserves houses that have custom CRM statuses (favorite, call, viewing)
+ * or personal notes so user shortlisted properties are never lost.
+ * Pass ?all=true to perform a complete wipe.
  */
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
     await setupDb();
-    await db.execute('DELETE FROM house_crm');
-    await db.execute('DELETE FROM houses');
+    const { searchParams } = request.nextUrl;
+    const forceAll = searchParams.get('all') === 'true';
+
+    if (forceAll) {
+      await db.execute('DELETE FROM house_crm');
+      await db.execute('DELETE FROM houses');
+      return NextResponse.json({ success: true, message: 'Повністю очищено всю базу даних.' });
+    }
+
+    // Smart cleanup: delete only unstarred 'new' houses without personal notes
+    await db.execute(`
+      DELETE FROM houses 
+      WHERE id NOT IN (
+        SELECT house_id FROM house_crm 
+        WHERE status IN ('favorite', 'call', 'viewing', 'archived') 
+           OR (notes IS NOT NULL AND length(trim(notes)) > 0)
+      )
+    `);
+
+    // Clean up orphan 'new' crm records without notes
+    await db.execute(`
+      DELETE FROM house_crm 
+      WHERE status NOT IN ('favorite', 'call', 'viewing', 'archived') 
+        AND (notes IS NULL OR length(trim(notes)) = 0)
+    `);
     
-    return NextResponse.json({ success: true, message: 'Усі будинки видалено успішно' });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Базу оновлено (ваші збережені будинки та нотатки збережено!)' 
+    });
   } catch (error) {
     console.error('Error clearing database:', error);
     return NextResponse.json({ error: 'Failed to clear database' }, { status: 500 });

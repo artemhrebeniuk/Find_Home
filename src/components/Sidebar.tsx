@@ -1,5 +1,4 @@
-'use client';
-
+import React from 'react';
 import type { HouseWithCRM, CRMStatus } from '@/lib/types';
 import HouseCard from './HouseCard';
 
@@ -16,13 +15,16 @@ interface SidebarProps {
   onSortChange: (sort: string) => void;
   onStatusChange: (id: number, status: CRMStatus) => void;
   onNotesChange: (id: number, notes: string) => void;
+  onOpenGallery?: (house: HouseWithCRM, photoIndex?: number) => void;
+  onPhotosUpdated?: (houseId: number, photos: string[], description?: string) => void;
 }
 
 /**
  * Sidebar layout containing the scrollable list of HouseCards,
  * total results count, and sorting controls.
+ * Memoized for high FPS when other page components re-render.
  */
-export default function Sidebar({
+function SidebarComponent({
   houses,
   selectedHouseId,
   sort,
@@ -32,6 +34,8 @@ export default function Sidebar({
   onSortChange,
   onStatusChange,
   onNotesChange,
+  onOpenGallery,
+  onPhotosUpdated,
 }: SidebarProps) {
   return (
     <aside className={`sidebar ${mobileViewMode === 'list' ? 'mobile-open' : ''}`}>
@@ -49,38 +53,42 @@ export default function Sidebar({
           >
             <option value="price_asc">Ціна ↑</option>
             <option value="price_desc">Ціна ↓</option>
-            <option value="distance">Відстань</option>
-            <option value="date">Нові</option>
+            <option value="date_desc">Нові спочатку</option>
+            <option value="distance_asc">Ближче до міста</option>
+            <option value="area_desc">Більша площа</option>
           </select>
         </div>
       </div>
 
       <div className="sidebar-list">
-        {loading && (
-          <div className="loading-spinner" />
-        )}
-
-        {!loading && houses.length === 0 && (
-          <div className="empty-state">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M3 12L12 3L21 12V21H15V15H9V21H3V12Z" />
-            </svg>
-            <h3>Нічого не знайдено</h3>
-            <p>Спробуйте змінити фільтри або розширити діапазон пошуку</p>
+        {loading ? (
+          <div className="sidebar-loading">
+            <div className="loading-spinner" />
+            <p>Завантаження будинків...</p>
           </div>
+        ) : houses.length === 0 ? (
+          <div className="sidebar-empty">
+            <p className="empty-title">Нічого не знайдено</p>
+            <p className="empty-subtitle">Спробуйте змінити фільтри або синхронізувати нові оголошення</p>
+          </div>
+        ) : (
+          houses.map((house) => (
+            <HouseCard
+              key={house.id}
+              house={house}
+              isActive={house.id === selectedHouseId}
+              onSelect={onHouseSelect}
+              onStatusChange={onStatusChange}
+              onNotesChange={onNotesChange}
+              onOpenGallery={onOpenGallery}
+              onPhotosUpdated={onPhotosUpdated}
+            />
+          ))
         )}
-
-        {!loading && houses.map((house) => (
-          <HouseCard
-            key={house.id}
-            house={house}
-            isActive={house.id === selectedHouseId}
-            onClick={() => onHouseSelect(house.id)}
-            onStatusChange={onStatusChange}
-            onNotesChange={onNotesChange}
-          />
-        ))}
       </div>
     </aside>
   );
 }
+
+const Sidebar = React.memo(SidebarComponent);
+export default Sidebar;

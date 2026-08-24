@@ -18,6 +18,7 @@ interface MapViewProps {
   onHouseSelect: (id: number) => void;
   onStatusChange: (id: number, status: CRMStatus) => void;
   onNotesChange: (id: number, notes: string) => void;
+  onOpenGallery?: (house: HouseWithCRM, photoIndex?: number) => void;
   mapCenter?: [number, number];
   mapZoom?: number;
   mapBounds?: { sw: [number, number]; ne: [number, number] } | null;
@@ -50,6 +51,7 @@ export default function MapView({
   onHouseSelect,
   onStatusChange,
   onNotesChange,
+  onOpenGallery,
   mapCenter = [48.9, 31.2],
   mapZoom = 6,
   mapBounds,
@@ -147,7 +149,7 @@ export default function MapView({
 
     // Use the real photo from the listing
     const photoHtml = house.photo_url
-      ? `<img class="popup-image" src="${house.photo_url}" alt="${house.title || 'Будинок'}" loading="lazy" onerror="this.style.display='none'" />`
+      ? `<div class="popup-img-container" title="Натисніть для перегляду фото"><img class="popup-image" src="${house.photo_url}" alt="${house.title || 'Будинок'}" loading="lazy" onerror="this.style.display='none'" /><div class="popup-img-badge">📷 Галерея</div></div>`
       : '';
 
     return `
@@ -225,6 +227,14 @@ export default function MapView({
         const popupEl = marker.getPopup()?.getElement();
         if (!popupEl) return;
 
+        // Image click to open gallery
+        const imgContainer = popupEl.querySelector('.popup-img-container');
+        if (imgContainer) {
+          imgContainer.addEventListener('click', () => {
+            if (onOpenGallery) onOpenGallery(house, 0);
+          });
+        }
+
         // Status buttons
         popupEl.querySelectorAll('[data-action="status"]').forEach((btn) => {
           btn.addEventListener('click', (e) => {
@@ -258,7 +268,7 @@ export default function MapView({
       cluster.addLayer(marker);
       markersRef.current.set(house.id, marker);
     });
-  }, [houses, createPopupContent, onHouseSelect, onStatusChange, onNotesChange]);
+  }, [houses, createPopupContent, onHouseSelect, onStatusChange, onNotesChange, onOpenGallery]);
 
   // Highlight selected house
   useEffect(() => {
