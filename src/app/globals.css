@@ -6,44 +6,45 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Sans:wght@500;600;700&display=swap');
 
 /* --- Design Tokens --- */
-:root {
-  /* Background palette */
-  --bg-primary: #0B0E14;
-  --bg-secondary: #131720;
-  --bg-elevated: #1A1F2E;
-  --bg-surface: #212738;
-  --bg-hover: #2A3147;
+:root,
+html[data-theme="dark"] {
+  /* Default: Softer & Brighter Slate Dark Palette */
+  --bg-primary: #121824;
+  --bg-secondary: #1A2232;
+  --bg-elevated: #222B3E;
+  --bg-surface: #2C374E;
+  --bg-hover: #374460;
 
   /* Accent colors */
-  --accent: #6C63FF;
-  --accent-hover: #7B73FF;
-  --accent-glow: rgba(108, 99, 255, 0.15);
-  --accent-warm: #FF6B35;
-  --accent-warm-hover: #FF8052;
+  --accent: #6366F1;
+  --accent-hover: #818CF8;
+  --accent-glow: rgba(99, 102, 241, 0.22);
+  --accent-warm: #F97316;
+  --accent-warm-hover: #FB923C;
 
   /* Text */
-  --text-primary: #F0F0F5;
-  --text-secondary: #8E91A4;
-  --text-muted: #5A5D6E;
-  --text-inverse: #0B0E14;
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-inverse: #0F172A;
 
   /* CRM Status colors */
   --status-new: #3B82F6;
   --status-favorite: #F59E0B;
-  --status-call: #8B5CF6;
+  --status-call: #A855F7;
   --status-viewing: #10B981;
-  --status-archived: #6B7280;
+  --status-archived: #94A3B8;
 
   /* Borders */
-  --border: #1E2333;
-  --border-hover: #2D3348;
-  --border-focus: #6C63FF;
+  --border: #2C374D;
+  --border-hover: #43516E;
+  --border-focus: #6366F1;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
-  --shadow-glow: 0 0 20px rgba(108, 99, 255, 0.2);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.25);
 
   /* Spacing */
   --space-xs: 4px;
@@ -77,6 +78,47 @@
   --sidebar-width: 420px;
   --header-height: 56px;
   --filter-height: 52px;
+}
+
+/* Light Theme Overrides (Airbnb / Apple Clean Light) */
+html[data-theme="light"] {
+  /* Background palette */
+  --bg-primary: #F8FAFC;
+  --bg-secondary: #FFFFFF;
+  --bg-elevated: #FFFFFF;
+  --bg-surface: #F1F5F9;
+  --bg-hover: #E2E8F0;
+
+  /* Accent colors */
+  --accent: #4F46E5;
+  --accent-hover: #4338CA;
+  --accent-glow: rgba(79, 70, 229, 0.15);
+  --accent-warm: #EA580C;
+  --accent-warm-hover: #C2410C;
+
+  /* Text - high contrast for mobile screens */
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+  --text-inverse: #FFFFFF;
+
+  /* CRM Status colors */
+  --status-new: #2563EB;
+  --status-favorite: #D97706;
+  --status-call: #7C3AED;
+  --status-viewing: #059669;
+  --status-archived: #64748B;
+
+  /* Borders */
+  --border: #E2E8F0;
+  --border-hover: #CBD5E1;
+  --border-focus: #4F46E5;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.15);
 }
 
 /* --- Reset & Base --- */
@@ -170,13 +212,57 @@ a:hover {
   color: var(--accent);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-left: auto;
+}
+
 .header-stats {
   display: flex;
   align-items: center;
   gap: var(--space-xl);
-  margin-left: auto;
   font-size: 0.8rem;
   color: var(--text-secondary);
+}
+
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  font-family: var(--font-body);
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.theme-toggle-btn:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.theme-toggle-btn .theme-icon {
+  color: var(--accent);
+  transition: transform var(--duration-base) var(--ease-spring);
+}
+
+.theme-toggle-btn:hover .theme-icon {
+  transform: rotate(20deg);
 }
 
 .header-stat {
@@ -529,7 +615,7 @@ a:hover {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
+  background: var(--bg-surface);
   color: var(--text-muted);
   font-size: 0.65rem;
   font-weight: 500;
@@ -1720,7 +1806,7 @@ a:hover {
 .card-expanded-drawer {
   margin-top: 6px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1732,8 +1818,8 @@ a:hover {
 .drawer-description {
   padding: 10px 12px;
   border-radius: var(--radius-md);
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
 }
 
 .drawer-description p {
@@ -1758,8 +1844,8 @@ a:hover {
   gap: 2px;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
 }
 
 .drawer-spec-lbl {

@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Star, Calendar, Home, CheckCircle2, AlertCircle, Info, X, Map as MapIcon, List as ListIcon } from 'lucide-react';
+import { Star, Archive, Home, CheckCircle2, AlertCircle, Info, X, Map as MapIcon, List as ListIcon, Sun, Moon } from 'lucide-react';
 import FilterPanel from '@/components/FilterPanel';
 import Sidebar from '@/components/Sidebar';
 import PhotoGalleryModal from '@/components/PhotoGalleryModal';
@@ -30,6 +30,29 @@ let toastIdCounter = 0;
  * and data fetching. It connects the FilterPanel, Sidebar, and MapView components.
  */
 export default function HomePage() {
+  // Theme state ('dark' as default, with localStorage sync)
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('findhome-theme') as 'light' | 'dark' | null;
+    if (saved === 'dark' || saved === 'light') {
+      setTheme(saved);
+      document.documentElement.setAttribute('data-theme', saved);
+    } else {
+      setTheme('dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      localStorage.setItem('findhome-theme', next);
+      document.documentElement.setAttribute('data-theme', next);
+      return next;
+    });
+  }, []);
+
   // Filter state
   const [dealType, setDealType] = useState<'sale' | 'rent'>('sale');
   const [region, setRegion] = useState('all');
@@ -314,7 +337,7 @@ export default function HomePage() {
 
   // Stats
   const favoriteCount = houses.filter(h => h.crm_status === 'favorite').length;
-  const viewingCount = houses.filter(h => h.crm_status === 'viewing').length;
+  const archivedCount = houses.filter(h => h.crm_status === 'archived').length;
 
   return (
     <div className="app-layout">
@@ -326,22 +349,45 @@ export default function HomePage() {
           </svg>
           Find<span>Home</span>
         </Link>
-        <div className="header-stats">
-          <div className="header-stat">
-            <Star size={16} />
-            <strong>{favoriteCount}</strong>
-            <span>обрані</span>
+
+        <div className="header-actions">
+          <div className="header-stats">
+            <div className="header-stat">
+              <Star size={16} />
+              <strong>{favoriteCount}</strong>
+              <span>обрані</span>
+            </div>
+            <div className="header-stat">
+              <Archive size={16} />
+              <strong>{archivedCount}</strong>
+              <span>архів</span>
+            </div>
+            <div className="header-stat">
+              <Home size={16} />
+              <strong>{houses.length}</strong>
+              <span>будинків</span>
+            </div>
           </div>
-          <div className="header-stat">
-            <Calendar size={16} />
-            <strong>{viewingCount}</strong>
-            <span>перегляди</span>
-          </div>
-          <div className="header-stat">
-            <Home size={16} />
-            <strong>{houses.length}</strong>
-            <span>будинків</span>
-          </div>
+
+          {/* Theme Toggle Button */}
+          <button
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            title={theme === 'light' ? 'Перемкнути на темну тему' : 'Перемкнути на світлу тему'}
+            aria-label="Перемикач теми"
+          >
+            {theme === 'light' ? (
+              <>
+                <Moon size={16} className="theme-icon" />
+                <span className="theme-toggle-text">Темна</span>
+              </>
+            ) : (
+              <>
+                <Sun size={16} className="theme-icon" />
+                <span className="theme-toggle-text">Світла</span>
+              </>
+            )}
+          </button>
         </div>
       </header>
 
@@ -385,6 +431,7 @@ export default function HomePage() {
           onNotesChange={handleNotesChange}
           onOpenGallery={handleOpenGallery}
           mapBounds={mapBounds}
+          theme={theme}
         />
         
         {/* Mobile FAB */}

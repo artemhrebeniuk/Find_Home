@@ -37,7 +37,7 @@ export interface House {
 /**
  * Valid statuses for a property in the personal CRM system.
  */
-export type CRMStatus = 'new' | 'favorite' | 'call' | 'viewing' | 'archived';
+export type CRMStatus = 'new' | 'favorite' | 'archived';
 
 /**
  * Represents the personal CRM data (status and notes) attached to a specific house.
@@ -106,7 +106,7 @@ export interface UkraineCity {
   region_id: number;
 }
 
-import { Sparkles, Star, Phone, Calendar, Archive } from 'lucide-react';
+import { Sparkles, Star, Archive } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 /**
@@ -115,7 +115,5 @@ import type { LucideIcon } from 'lucide-react';
 export const CRM_STATUSES: Record<CRMStatus, { label: string; icon: LucideIcon; color: string }> = {
   new: { label: 'Нове', icon: Sparkles, color: '#3B82F6' },
   favorite: { label: 'Обране', icon: Star, color: '#F59E0B' },
-  call: { label: 'Зателефонувати', icon: Phone, color: '#8B5CF6' },
-  viewing: { label: 'Перегляд', icon: Calendar, color: '#10B981' },
-  archived: { label: 'Архів', icon: Archive, color: '#6B7280' },
+  archived: { label: 'Архів', icon: Archive, color: '#64748B' },
 };

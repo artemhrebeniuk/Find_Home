@@ -22,21 +22,18 @@ interface MapViewProps {
   mapCenter?: [number, number];
   mapZoom?: number;
   mapBounds?: { sw: [number, number]; ne: [number, number] } | null;
+  theme?: 'light' | 'dark';
 }
 
 const STATUS_COLORS: Record<string, string> = {
   new: '#3B82F6',
   favorite: '#F59E0B',
-  call: '#8B5CF6',
-  viewing: '#10B981',
-  archived: '#6B7280',
+  archived: '#64748B',
 };
 
 const STATUS_LABELS: Record<string, string> = {
   new: 'Нове',
   favorite: 'Обране',
-  call: 'Зателефонувати',
-  viewing: 'Перегляд',
   archived: 'Архів',
 };
 
@@ -55,9 +52,11 @@ export default function MapView({
   mapCenter = [48.9, 31.2],
   mapZoom = 6,
   mapBounds,
+  theme = 'dark',
 }: MapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
   const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
   const markersRef = useRef<Map<number, L.Marker>>(new Map());
 
@@ -72,12 +71,19 @@ export default function MapView({
       attributionControl: true,
     });
 
-    // Dark-themed tile layer
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    // Initial tile layer based on theme
+    const isLight = theme === 'light';
+    const tileUrl = isLight
+      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
+    const tileLayer = L.tileLayer(tileUrl, {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 19,
     }).addTo(map);
+
+    tileLayerRef.current = tileLayer;
 
     // Initialize cluster group
     const clusterGroup = L.markerClusterGroup({
@@ -108,9 +114,29 @@ export default function MapView({
       map.remove();
       mapRef.current = null;
       clusterGroupRef.current = null;
+      tileLayerRef.current = null;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // Run once on mount
+
+  // Switch tile layer dynamically when theme changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    if (tileLayerRef.current) {
+      mapRef.current.removeLayer(tileLayerRef.current);
+    }
+    const isLight = theme === 'light';
+    const tileUrl = isLight
+      ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
+    const newTileLayer = L.tileLayer(tileUrl, {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 19,
+    }).addTo(mapRef.current);
+
+    tileLayerRef.current = newTileLayer;
+  }, [theme]);
 
   // Fly to bounds when region changes
   useEffect(() => {
