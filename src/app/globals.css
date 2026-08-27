@@ -635,13 +635,13 @@ a:hover {
 
 .house-card-price {
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .house-card-location {
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -651,15 +651,15 @@ a:hover {
 .house-card-specs {
   display: flex;
   gap: var(--space-md);
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .house-card-spec {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
 }
 
 .house-card-footer {
@@ -670,7 +670,7 @@ a:hover {
 }
 
 .house-card-distance {
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   color: var(--accent);
   font-weight: 500;
 }
@@ -680,9 +680,9 @@ a:hover {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: var(--radius-full);
-  font-size: 0.68rem;
+  font-size: 0.74rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -1773,14 +1773,14 @@ a:hover {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 7px 10px;
+  padding: 8px 12px;
   margin-top: 8px;
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
   color: var(--text-secondary);
-  font-size: 0.76rem;
-  font-weight: 500;
+  font-size: 0.86rem;
+  font-weight: 600;
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-out),
               color var(--duration-fast) var(--ease-out),
@@ -1790,7 +1790,7 @@ a:hover {
 .btn-card-expand:hover {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--border-hover);
 }
 
 .expand-chevron {
@@ -1823,11 +1823,11 @@ a:hover {
 }
 
 .drawer-description p {
-  font-size: 0.82rem;
-  line-height: 1.55;
+  font-size: 0.88rem;
+  line-height: 1.6;
   color: var(--text-secondary);
   white-space: pre-line;
-  max-height: 140px;
+  max-height: 150px;
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -1849,7 +1849,7 @@ a:hover {
 }
 
 .drawer-spec-lbl {
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1857,7 +1857,7 @@ a:hover {
 }
 
 .drawer-spec-val {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -1870,14 +1870,14 @@ a:hover {
 
 .drawer-action-btn {
   flex: 1;
-  font-size: 0.8rem !important;
+  font-size: 0.92rem !important;
   font-weight: 600 !important;
-  padding: 9px 12px !important;
+  padding: 10px 14px !important;
   border-radius: var(--radius-md) !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   text-decoration: none;
   transition: all var(--duration-fast) var(--ease-out);
 }
@@ -1929,115 +1929,133 @@ a:hover {
 @media (max-width: 640px) {
   /* Header & Filter Bar */
   .filter-bar {
-    padding: 6px 10px;
-    gap: 6px;
+    padding: 8px 12px;
+    gap: 8px;
   }
 
   .toggle-option {
-    padding: 6px 12px;
-    font-size: 0.82rem;
+    padding: 7px 14px;
+    font-size: 0.88rem;
   }
 
   .select-control,
   .input-control {
-    font-size: 0.82rem;
-    padding: 6px 8px;
-    min-height: 36px;
+    font-size: 0.88rem;
+    padding: 7px 10px;
+    min-height: 38px;
   }
 
   .crm-filter-pill {
-    padding: 4px 8px;
-    font-size: 0.74rem;
-    min-height: 32px;
+    padding: 6px 10px;
+    font-size: 0.82rem;
+    min-height: 34px;
   }
 
   .sync-btn {
-    padding: 6px 10px;
-    font-size: 0.76rem;
-    min-height: 36px;
-    gap: 4px;
+    padding: 7px 12px;
+    font-size: 0.82rem;
+    min-height: 38px;
+    gap: 5px;
   }
 
   /* Cards & Thumb Targets */
   .house-card {
-    padding: 10px 12px;
-    margin-bottom: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
   }
 
   .house-card-image {
-    width: 96px;
-    height: 76px;
+    width: 100px;
+    height: 82px;
   }
 
   .house-card-price {
-    font-size: 1.05rem;
+    font-size: 1.2rem;
   }
 
   .house-card-location {
-    font-size: 0.74rem;
+    font-size: 0.85rem;
   }
 
   .house-card-specs {
-    font-size: 0.72rem;
-    gap: 8px;
+    font-size: 0.82rem;
+    gap: 10px;
   }
 
+  .house-card-distance {
+    font-size: 0.8rem;
+  }
+
+  .btn-card-expand,
   .expand-btn {
-    padding: 8px 12px;
-    min-height: 38px;
-    font-size: 0.82rem;
+    padding: 9px 14px;
+    min-height: 40px;
+    font-size: 0.88rem;
+  }
+
+  .drawer-description p {
+    font-size: 0.88rem;
+    line-height: 1.6;
   }
 
   .drawer-specs-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 5px;
+    gap: 6px;
+  }
+
+  .drawer-spec-lbl {
+    font-size: 0.72rem;
+  }
+
+  .drawer-spec-val {
+    font-size: 0.95rem;
   }
 
   .drawer-actions {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     width: 100%;
   }
 
   .drawer-action-btn {
     width: 100%;
-    min-height: 42px;
-    font-size: 0.86rem;
+    min-height: 44px;
+    font-size: 0.92rem;
     font-weight: 600;
     justify-content: center;
   }
 
   /* Fullscreen Gallery Modal */
   .gallery-header {
-    padding: 10px 12px;
+    padding: 12px 14px;
   }
 
   .gallery-price {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
   }
 
   .gallery-location {
-    font-size: 0.74rem;
-    max-width: 150px;
+    font-size: 0.84rem;
+    max-width: 170px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .gallery-counter {
-    padding: 3px 7px;
-    font-size: 0.7rem;
+    padding: 4px 9px;
+    font-size: 0.78rem;
   }
 
   .gallery-btn-icon {
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
   }
 
   .gallery-nav-btn {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
   }
 
   .gallery-nav-btn.prev {
@@ -2049,35 +2067,46 @@ a:hover {
   }
 
   .gallery-thumbnails {
-    padding: 8px 10px;
-    gap: 5px;
+    padding: 10px 12px;
+    gap: 6px;
   }
 
   .gallery-thumb-item {
-    width: 50px;
-    height: 38px;
+    width: 52px;
+    height: 40px;
+  }
+
+  .mobile-fab {
+    padding: 12px 24px;
+    font-size: 0.92rem;
+    height: 48px;
+    min-width: 145px;
   }
 }
 
 /* Extra fine-tuning for ultra-narrow 360px devices (Redmi 10S / Redmi 10C) */
 @media (max-width: 380px) {
   .house-card-image {
-    width: 86px;
-    height: 70px;
+    width: 90px;
+    height: 74px;
   }
 
   .house-card-price {
-    font-size: 0.98rem;
+    font-size: 1.12rem;
   }
 
   .house-card-location {
-    font-size: 0.72rem;
+    font-size: 0.8rem;
+  }
+
+  .house-card-specs {
+    font-size: 0.78rem;
   }
 
   .mobile-fab {
-    padding: 9px 18px;
-    font-size: 0.84rem;
-    height: 42px;
-    min-width: 130px;
+    padding: 10px 20px;
+    font-size: 0.88rem;
+    height: 44px;
+    min-width: 135px;
   }
 }
