@@ -1,9 +1,16 @@
-'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { REGIONS } from '@/lib/geo';
 import type { CRMStatus } from '@/lib/types';
 import { CRM_STATUSES } from '@/lib/types';
-import { DownloadCloud, RefreshCw, Loader2, Trash2, AlertTriangle, Database } from 'lucide-react';
+import { DownloadCloud, RefreshCw, Loader2, Trash2, AlertTriangle, Database, Search, X, MapPin, Check, ChevronDown } from 'lucide-react';
+
+interface SettlementItem {
+  name: string;
+  region: string;
+  count: number;
+  lat: number;
+  lng: number;
+}
 
 /**
  * Props for the FilterPanel component.
@@ -11,12 +18,14 @@ import { DownloadCloud, RefreshCw, Loader2, Trash2, AlertTriangle, Database } fr
 interface FilterPanelProps {
   dealType: 'sale' | 'rent';
   region: string;
+  city: string;
   priceMin: string;
   priceMax: string;
   activeStatuses: CRMStatus[];
   syncing: string | null;
   onDealTypeChange: (dt: 'sale' | 'rent') => void;
   onRegionChange: (r: string) => void;
+  onCityChange: (c: string, coords?: { lat: number; lng: number } | null) => void;
   onPriceMinChange: (v: string) => void;
   onPriceMaxChange: (v: string) => void;
   onStatusToggle: (s: CRMStatus) => void;
@@ -27,19 +36,20 @@ interface FilterPanelProps {
 
 /**
  * Top navigation and filter bar.
- * Contains global filters (deal type, region, price), CRM status toggles,
+ * Contains global filters (deal type, region, settlement, price), CRM status toggles,
  * and global action buttons (sync OLX, sync DOM.RIA, wipe database).
  */
-
 export default function FilterPanel({
   dealType,
   region,
+  city,
   priceMin,
   priceMax,
   activeStatuses,
   syncing,
   onDealTypeChange,
   onRegionChange,
+  onCityChange,
   onPriceMinChange,
   onPriceMaxChange,
   onStatusToggle,
@@ -48,6 +58,13 @@ export default function FilterPanel({
   onRestore,
 }: FilterPanelProps) {
   const [confirmClear, setConfirmClear] = useState(false);
+  const [settlements, setSettlements] = useState<SettlementItem[]>([]);
+  const [loadingSettlements, setLoadingSettlements] = useState(false);
+  const [isSettlementOpen, setIsSettlementOpen] = useState(false);
+  const [settlementSearch, setSettlementSearch] = useState('');
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+  const settlementRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-reset confirm state after 3 seconds if not clicked
   useEffect(() => {
@@ -56,6 +73,61 @@ export default function FilterPanel({
       return () => clearTimeout(timer);
     }
   }, [confirmClear]);
+
+  // Fetch settlements when region or dealType changes
+  useEffect(() => {
+    let isMounted = true;
+    setLoadingSettlements(true);
+    const params = new URLSearchParams();
+    if (region && region !== 'all') params.set('region', region);
+    if (dealType) params.set('deal_type', dealType);
+
+    fetch(`/api/settlements?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data.settlements) {
+          setSettlements(data.settlements);
+        }
+      })
+      .catch((err) => console.error('Failed to load settlements:', err))
+      .finally(() => {
+        if (isMounted) setLoadingSettlements(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [region, dealType]);
+
+  // Click outside to close settlement dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (settlementRef.current && !settlementRef.current.contains(event.target as Node)) {
+        setIsSettlementOpen(false);
+      }
+    }
+    if (isSettlementOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      // Focus search input when opening dropdown
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isSettlementOpen]);
+
+  // Filter settlements based on user search query
+  const filteredSettlements = useMemo(() => {
+    const q = settlementSearch.trim().toLowerCase();
+    if (!q) return settlements;
+    return settlements.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.region.toLowerCase().includes(q)
+    );
+  }, [settlements, settlementSearch]);
+
+  const activeSettlementName = city && city !== 'all' ? city : 'Всі міста та села';
 
   return (
     <div className="filter-bar">
@@ -94,6 +166,192 @@ export default function FilterPanel({
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="filter-divider" />
+
+      {/* Settlement / City / Village Filter */}
+      <div className="filter-group settlement-filter-group" ref={settlementRef}>
+        <span className="filter-label">Місто / село</span>
+        <div className="settlement-selector-wrapper">
+          <button
+            type="button"
+            className={`settlement-trigger-btn ${city && city !== 'all' ? 'has-value' : ''}`}
+            onClick={() => setIsSettlementOpen((prev) => !prev)}
+            aria-expanded={isSettlementOpen}
+            title={activeSettlementName}
+          >
+            <MapPin size={13} className="settlement-pin-icon" />
+            <span className="settlement-name-text">{activeSettlementName}</span>
+            {city && city !== 'all' ? (
+              <span
+                className="settlement-clear-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCityChange('all', null);
+                  setSettlementSearch('');
+                }}
+                title="Скинути населений пункт"
+              >
+                <X size={14} />
+              </span>
+            ) : (
+              <ChevronDown size={14} className="settlement-chevron" />
+            )}
+          </button>
+
+          {isSettlementOpen && (
+            <>
+              <div 
+                className="settlement-backdrop" 
+                onClick={() => setIsSettlementOpen(false)} 
+              />
+              <div className="settlement-dropdown-menu">
+                <div className="settlement-sheet-header">
+                  <div className="settlement-sheet-title-wrap">
+                    <MapPin size={15} className="settlement-pin-icon" />
+                    <span className="settlement-sheet-title">Оберіть населений пункт</span>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="settlement-sheet-close" 
+                    onClick={() => setIsSettlementOpen(false)}
+                    aria-label="Закрити"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <div className="settlement-search-header">
+                  <Search size={14} className="search-input-icon" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    className="settlement-search-input"
+                    placeholder="Введіть місто або село..."
+                    value={settlementSearch}
+                    onChange={(e) => {
+                      setSettlementSearch(e.target.value);
+                      setHighlightedIndex(-1);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setHighlightedIndex((prev) =>
+                          prev < filteredSettlements.length - 1 ? prev + 1 : 0
+                        );
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setHighlightedIndex((prev) =>
+                          prev > 0 ? prev - 1 : filteredSettlements.length - 1
+                        );
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (highlightedIndex >= 0 && filteredSettlements[highlightedIndex]) {
+                          const target = filteredSettlements[highlightedIndex];
+                          onCityChange(target.name, { lat: target.lat, lng: target.lng });
+                        } else if (filteredSettlements.length > 0) {
+                          const first = filteredSettlements[0];
+                          onCityChange(first.name, { lat: first.lat, lng: first.lng });
+                        } else if (settlementSearch.trim()) {
+                          onCityChange(settlementSearch.trim(), null);
+                        }
+                        setIsSettlementOpen(false);
+                        setSettlementSearch('');
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        setIsSettlementOpen(false);
+                      }
+                    }}
+                  />
+                  {settlementSearch && (
+                    <button
+                      type="button"
+                      className="settlement-search-clear"
+                      onClick={() => {
+                        setSettlementSearch('');
+                        setHighlightedIndex(-1);
+                        searchInputRef.current?.focus();
+                      }}
+                      title="Очистити пошук"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+
+              <div className="settlement-options-list">
+                {/* Option to select All */}
+                <button
+                  type="button"
+                  className={`settlement-option-item ${(!city || city === 'all') ? 'selected' : ''}`}
+                  onClick={() => {
+                    onCityChange('all', null);
+                    setIsSettlementOpen(false);
+                    setSettlementSearch('');
+                  }}
+                >
+                  <span className="settlement-item-name">Всі міста та села</span>
+                  {(!city || city === 'all') && <Check size={14} className="check-icon" />}
+                </button>
+
+                {/* Filtered list of settlements */}
+                {filteredSettlements.map((s, idx) => {
+                  const isSelected = city?.toLowerCase() === s.name.toLowerCase();
+                  const isHighlighted = idx === highlightedIndex;
+                  return (
+                    <button
+                      key={`${s.name}-${s.region}-${idx}`}
+                      type="button"
+                      className={`settlement-option-item ${isSelected ? 'selected' : ''} ${isHighlighted ? 'highlighted' : ''}`}
+                      onMouseEnter={() => setHighlightedIndex(idx)}
+                      onClick={() => {
+                        onCityChange(s.name, { lat: s.lat, lng: s.lng });
+                        setIsSettlementOpen(false);
+                        setSettlementSearch('');
+                      }}
+                    >
+                      <div className="settlement-item-info">
+                        <span className="settlement-item-name">{s.name}</span>
+                        {region === 'all' && s.region && (
+                          <span className="settlement-item-region">{s.region}</span>
+                        )}
+                      </div>
+                      <div className="settlement-item-badges">
+                        {s.count > 0 ? (
+                          <span className="settlement-count-badge">
+                            {s.count} {s.count === 1 ? 'будинок' : s.count < 5 ? 'будинки' : 'будинків'}
+                          </span>
+                        ) : (
+                          <span className="settlement-empty-badge">село / місто</span>
+                        )}
+                        {isSelected && <Check size={14} className="check-icon" />}
+                      </div>
+                    </button>
+                  );
+                })}
+
+                {/* Freeform search if not matched in list */}
+                {settlementSearch.trim() && filteredSettlements.length === 0 && (
+                  <button
+                    type="button"
+                    className="settlement-option-item custom-search-item"
+                    onClick={() => {
+                      onCityChange(settlementSearch.trim(), null);
+                      setIsSettlementOpen(false);
+                    }}
+                  >
+                    <div className="settlement-item-info">
+                      <span className="settlement-item-name">Шукати «{settlementSearch.trim()}»</span>
+                      <span className="settlement-item-region">довільний пошук</span>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+        </div>
       </div>
 
       <div className="filter-divider" />

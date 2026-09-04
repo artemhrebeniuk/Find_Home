@@ -56,6 +56,7 @@ export default function HomePage() {
   // Filter state
   const [dealType, setDealType] = useState<'sale' | 'rent'>('sale');
   const [region, setRegion] = useState('all');
+  const [city, setCity] = useState('all');
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
   const [activeStatuses, setActiveStatuses] = useState<CRMStatus[]>([]);
@@ -136,6 +137,7 @@ export default function HomePage() {
       const params = new URLSearchParams();
       params.set('deal_type', dealType);
       if (region !== 'all') params.set('region', region);
+      if (city && city !== 'all') params.set('city', city);
       if (priceMin) params.set('price_min', priceMin);
       if (priceMax) params.set('price_max', priceMax);
       if (activeStatuses.length > 0) params.set('status', activeStatuses.join(','));
@@ -149,7 +151,7 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  }, [dealType, region, priceMin, priceMax, activeStatuses, sort]);
+  }, [dealType, region, city, priceMin, priceMax, activeStatuses, sort]);
 
   // Debounced fetch on filter change
   useEffect(() => {
@@ -170,6 +172,7 @@ export default function HomePage() {
   // Update map bounds when region changes
   const handleRegionChange = useCallback((newRegion: string) => {
     setRegion(newRegion);
+    setCity('all'); // Reset settlement filter when switching region
     if (newRegion === 'all') {
       setMapBounds(null);
     } else {
@@ -179,6 +182,30 @@ export default function HomePage() {
       }
     }
   }, []);
+
+  // Update map bounds and filter when city/settlement changes
+  const handleCityChange = useCallback((newCity: string, coords?: { lat: number; lng: number } | null) => {
+    setCity(newCity);
+    setSelectedHouseId(null);
+
+    if (newCity === 'all' || !newCity) {
+      // Revert to region bounds or all Ukraine
+      if (region === 'all') {
+        setMapBounds(null);
+      } else {
+        const r = REGIONS.find(reg => reg.name === region);
+        if (r) {
+          setMapBounds({ sw: r.bounds.sw as [number, number], ne: r.bounds.ne as [number, number] });
+        }
+      }
+    } else if (coords && coords.lat && coords.lng) {
+      // Smoothly zoom in on the selected settlement
+      setMapBounds({
+        sw: [coords.lat - 0.035, coords.lng - 0.05],
+        ne: [coords.lat + 0.035, coords.lng + 0.05],
+      });
+    }
+  }, [region]);
 
   const abortSyncRef = useRef<boolean>(false);
 
@@ -394,12 +421,14 @@ export default function HomePage() {
       <FilterPanel
         dealType={dealType}
         region={region}
+        city={city}
         priceMin={priceMin}
         priceMax={priceMax}
         activeStatuses={activeStatuses}
         syncing={syncing}
         onDealTypeChange={handleDealTypeChange}
         onRegionChange={handleRegionChange}
+        onCityChange={handleCityChange}
         onPriceMinChange={setPriceMin}
         onPriceMaxChange={setPriceMax}
         onStatusToggle={handleStatusToggle}
@@ -434,23 +463,25 @@ export default function HomePage() {
           theme={theme}
         />
         
-        {/* Mobile FAB */}
-        <button 
-          className={`mobile-fab ${mobileViewMode === 'list' ? 'fab-open' : ''}`}
-          onClick={() => setMobileViewMode(prev => prev === 'map' ? 'list' : 'map')}
-        >
-          {mobileViewMode === 'map' ? (
-            <>
-              <ListIcon size={18} />
-              Списком
-            </>
-          ) : (
-            <>
-              <MapIcon size={18} />
-              На карті
-            </>
-          )}
-        </button>
+        {/* Mobile FAB - hidden when photo gallery is open */}
+        {!isGalleryOpen && (
+          <button 
+            className={`mobile-fab ${mobileViewMode === 'list' ? 'fab-open' : ''}`}
+            onClick={() => setMobileViewMode(prev => prev === 'map' ? 'list' : 'map')}
+          >
+            {mobileViewMode === 'map' ? (
+              <>
+                <ListIcon size={18} />
+                Списком
+              </>
+            ) : (
+              <>
+                <MapIcon size={18} />
+                На карті
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Photo Gallery Modal */}

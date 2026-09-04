@@ -82,15 +82,18 @@ export default function PhotoGalleryModal({
 
   const photos = dynamicPhotos.length > 0 ? dynamicPhotos : extractPhotos(house);
 
-  // Body scroll lock
+  // Body scroll lock & gallery-open state class
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.classList.add('gallery-open');
     } else {
       document.body.style.overflow = '';
+      document.body.classList.remove('gallery-open');
     }
     return () => {
       document.body.style.overflow = '';
+      document.body.classList.remove('gallery-open');
     };
   }, [isOpen]);
 

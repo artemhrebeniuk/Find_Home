@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
 
   const dealType = searchParams.get('deal_type') || 'sale';
   const region = searchParams.get('region');
+  const city = searchParams.get('city');
   const priceMin = searchParams.get('price_min');
   const priceMax = searchParams.get('price_max');
   const statuses = searchParams.get('status');
@@ -38,6 +39,11 @@ export async function GET(request: NextRequest) {
   if (region && region !== 'all') {
     conditions.push('h.region = ?');
     params.push(region);
+  }
+
+  if (city && city !== 'all') {
+    conditions.push('(h.city = ? COLLATE NOCASE OR h.city LIKE ? OR h.address LIKE ?)');
+    params.push(city, `%${city}%`, `%${city}%`);
   }
 
   if (priceMin) {
